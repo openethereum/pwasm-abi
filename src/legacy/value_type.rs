@@ -1,6 +1,7 @@
 //! Typed value module
 
 /// Typed value
+#[derive(Debug, PartialEq)]
 pub enum ValueType {
     U32(u32),
     U64(u64),

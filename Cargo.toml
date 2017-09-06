@@ -6,6 +6,12 @@ authors = ["NikVolf <nikvolf@gmail.com>"]
 [profile.release]
 panic = "abort"
 
+[dependencies]
+rustc-hex = { version = "1.0", optional = true }
+
 [dependency.byteorder]
 version = "1"
 default-features = false
+
+[features]
+std = ["rustc-hex"]
