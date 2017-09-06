@@ -5,3 +5,7 @@ authors = ["NikVolf <nikvolf@gmail.com>"]
 
 [profile.release]
 panic = "abort"
+
+[dependency.byteorder]
+version = "1"
+default-features = false

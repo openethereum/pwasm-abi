@@ -7,7 +7,7 @@ pub struct Signature {
 
 impl Signature {
 
-    pub fn decode_invoke(&self, payload: Vec<u8>) -> Vec<ValueType> {
+    pub fn decode_invoke(&self, payload: &[u8]) -> Vec<ValueType> {
         Vec::new()
     }
 
