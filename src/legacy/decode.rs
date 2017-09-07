@@ -1,10 +1,8 @@
 //! Payload decoder according to signature in legacy (ethereum) ABI
 //! Original code is mostly by debris in ethabi
 
+use super::util::{as_bool, as_i32, as_u32, as_u64, as_i64, Error, Hash};
 use super::{ValueType, ParamType};
-
-#[derive(Debug)]
-pub struct Error;
 
 /// Decodes ABI compliant vector of bytes into vector of runtime values
 pub fn decode(types: &[ParamType], data: &[u8]) -> Result<Vec<ValueType>, Error> {
@@ -19,8 +17,6 @@ pub fn decode(types: &[ParamType], data: &[u8]) -> Result<Vec<ValueType>, Error>
 	Ok(tokens)
 }
 
-type Hash = [u8; 32];
-
 struct DecodeResult {
 	token: ValueType,
 	new_offset: usize,
@@ -28,6 +24,7 @@ struct DecodeResult {
 
 struct BytesTaken {
 	bytes: Vec<u8>,
+	#[allow(dead_code)] // will be used later probably
 	new_offset: usize,
 }
 
@@ -46,117 +43,6 @@ fn slice_data(data: &[u8]) -> Result<Vec<Hash>, Error> {
 		result.push(slice);
 	}
 	Ok(result)
-}
-
-/// Converts u32 to right aligned array of 32 bytes.
-fn pad_u32(value: u32) -> Hash {
-	let mut padded = [0u8; 32];
-	padded[28] = (value >> 24) as u8;
-	padded[29] = (value >> 16) as u8;
-	padded[30] = (value >> 8) as u8;
-	padded[31] = value as u8;
-	padded
-}
-
-/// Converts i32 to right aligned array of 32 bytes.
-fn pad_i32(value: i32) -> Hash {
-	if value >= 0 {
-		return pad_u32(value as u32);
-	}
-
-	let mut padded = [0xffu8; 32];
-	padded[28] = (value >> 24) as u8;
-	padded[29] = (value >> 16) as u8;
-	padded[30] = (value >> 8) as u8;
-	padded[31] = value as u8;
-	padded
-}
-
-fn as_u32(slice: &Hash) -> Result<u32, Error> {
-	if !slice[..28].iter().all(|x| *x == 0) {
-		return Err(Error);
-	}
-
-	let result = ((slice[28] as u32) << 24) +
-		((slice[29] as u32) << 16) +
-		((slice[30] as u32) << 8) +
-		(slice[31] as u32);
-
-	Ok(result)
-}
-
-fn as_i32(slice: &Hash) -> Result<i32, Error> {
-	let is_negative = slice[0] & 0x80 != 0;
-
-	if !is_negative {
-		return Ok(as_u32(slice)? as i32);
-	}
-
-	// only negative path here
-
-	if !slice[1..28].iter().all(|x| *x == 0xff) {
-		return Err(Error);
-	}
-
-	let result = ((slice[28] as u32) << 24) +
-		((slice[29] as u32) << 16) +
-		((slice[30] as u32) << 8) +
-		(slice[31] as u32);
-
-	Ok(-(result as i32))
-}
-
-fn as_u64(slice: &Hash) -> Result<u64, Error> {
-	if !slice[..24].iter().all(|x| *x == 0) {
-		return Err(Error);
-	}
-
-	let result =
-		((slice[24] as u64) << 56) +
-		((slice[25] as u64) << 48) +
-		((slice[26] as u64) << 40) +
-		((slice[27] as u64) << 32) +
-		((slice[28] as u64) << 24) +
-		((slice[29] as u64) << 16) +
-		((slice[30] as u64) << 8) +
-		 (slice[31] as u64);
-
-	Ok(result)
-}
-
-fn as_i64(slice: &Hash) -> Result<i64, Error> {
-	let is_negative = slice[0] & 0x80 != 0;
-
-	if !is_negative {
-		return Ok(as_u64(slice)? as i64);
-	}
-
-	// only negative path here
-
-	if !slice[1..28].iter().all(|x| *x == 0xff) {
-		return Err(Error);
-	}
-
-	let result =
-		((slice[24] as u64) << 56) +
-		((slice[25] as u64) << 48) +
-		((slice[26] as u64) << 40) +
-		((slice[27] as u64) << 32) +
-		((slice[28] as u64) << 24) +
-		((slice[29] as u64) << 16) +
-		((slice[30] as u64) << 8) +
-		 (slice[31] as u64);
-
-	Ok(-(result as i64))
-}
-
-
-fn as_bool(slice: &Hash) -> Result<bool, Error> {
-	if !slice[..31].iter().all(|x| *x == 0) {
-		return Err(Error);
-	}
-
-	Ok(slice[31] == 1)
 }
 
 fn peek(slices: &[Hash], position: usize) -> Result<&Hash, Error> {
