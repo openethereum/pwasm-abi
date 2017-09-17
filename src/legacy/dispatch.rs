@@ -59,8 +59,8 @@ impl Table {
 	{
 		let mut payload = payload;
 		if payload.len() < 4 { return Err(Error); }
-		let method: Vec<u8> = payload.drain(0..4).collect();
-		let method_id = BigEndian::read_u32(&method);
+		let method_id = BigEndian::read_u32(&payload[..]);
+		payload.drain(0..4);
 
 		let hash_signature = self.inner.iter().find(|x| x.hash == method_id).ok_or(Error)?;
 
