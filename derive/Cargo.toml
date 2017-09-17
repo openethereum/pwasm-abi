@@ -8,6 +8,8 @@ panic = "abort"
 
 [dependencies]
 pwasm-abi = { path = ".." }
+quote = "0.3"
+syn = "0.11"
 
 [lib]
 name = "pwasm_abi_derive"
