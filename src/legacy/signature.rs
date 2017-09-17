@@ -1,3 +1,5 @@
+use lib::*;
+
 use super::{ParamType, ValueType, Error};
 use super::decode::decode;
 use super::encode::encode;

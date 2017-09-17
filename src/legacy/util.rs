@@ -1,3 +1,5 @@
+use lib::*;
+
 #[derive(Debug)]
 pub struct Error;
 

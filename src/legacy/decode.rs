@@ -1,6 +1,7 @@
 //! Payload decoder according to signature in legacy (ethereum) ABI
 //! Original code is mostly by debris in ethabi
 
+use lib::*;
 use super::util::{as_bool, as_i32, as_u32, as_u64, as_i64, Error, Hash};
 use super::{ValueType, ParamType};
 

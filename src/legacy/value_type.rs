@@ -1,5 +1,7 @@
 //! Typed value module
 
+use lib::*;
+
 /// Typed value
 #[derive(Debug, PartialEq)]
 pub enum ValueType {

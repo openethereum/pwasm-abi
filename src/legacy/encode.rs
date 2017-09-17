@@ -1,5 +1,6 @@
 //! Encode utilities
 
+use lib::*;
 use super::ValueType;
 use super::util::{pad_u32, pad_i32, pad_i64, pad_u64, Hash};
 

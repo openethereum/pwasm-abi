@@ -1,6 +1,7 @@
 use byteorder::{BigEndian, ByteOrder};
 use tiny_keccak::Keccak;
 
+use lib::*;
 use super::{Signature, ValueType};
 use super::util::Error;
 
