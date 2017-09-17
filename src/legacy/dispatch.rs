@@ -1,7 +1,8 @@
 use byteorder::{BigEndian, ByteOrder};
 use tiny_keccak::Keccak;
 
-use super::{Signature, ParamType};
+use super::{Signature, ValueType};
+use super::util::Error;
 
 pub struct HashSignature {
     hash: u32,
@@ -11,6 +12,12 @@ pub struct HashSignature {
 pub struct NamedSignature {
 	name: &'static str,
 	signature: Signature,
+}
+
+#[derive(Default)]
+pub struct Table {
+	// vec instead of hashmap since dispatch table is usually small (todo: maybe add variant with hash tables)
+	inner: Vec<HashSignature>,
 }
 
 impl From<NamedSignature> for HashSignature {
@@ -37,8 +44,37 @@ impl From<NamedSignature> for HashSignature {
 	}
 }
 
+impl Table {
+	pub fn new(inner: Vec<HashSignature>) -> Self {
+		Table { inner: inner }
+	}
+
+	pub fn push<S>(&mut self, signature: S) where S: Into<HashSignature> {
+		self.inner.push(signature.into())
+	}
+
+	pub fn dispatch<D>(&self, payload: Vec<u8>, mut d: D) 
+		-> Result<Vec<u8>, Error> 
+		where D: FnMut(u32, Vec<ValueType>) -> Option<ValueType>
+	{
+		let mut payload = payload;
+		if payload.len() < 4 { return Err(Error); }
+		let method: Vec<u8> = payload.drain(0..4).collect();
+		let method_id = BigEndian::read_u32(&method);
+
+		let hash_signature = self.inner.iter().find(|x| x.hash == method_id).ok_or(Error)?;
+
+		let args = hash_signature.signature.decode_invoke(&payload);
+		let result = d(method_id, args);
+
+		Ok(hash_signature.signature.encode_result(result)?)
+	}
+}
+
 #[test]
 fn match_signature() {
+
+	use super::ParamType;
 
 	let named = NamedSignature {
 		name: "baz",
@@ -52,6 +88,8 @@ fn match_signature() {
 
 #[test]
 fn match_signature_2() {
+
+	use super::ParamType;
 
 	let named = NamedSignature {
 		name: "sam",

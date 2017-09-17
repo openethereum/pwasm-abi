@@ -12,3 +12,4 @@ pub use self::param_type::ParamType;
 pub use self::value_type::ValueType;
 pub use self::signature::Signature;
 pub use self::util::Error;
+pub use self::dispatch::{HashSignature, NamedSignature, Table};
