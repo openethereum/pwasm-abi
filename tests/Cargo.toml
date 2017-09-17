@@ -1,0 +1,8 @@
+[package]
+name = "pwasm-abi-tests"
+version = "0.0.0"
+authors = ["NikVolf <nikvolf@gmail.com>"]
+
+[dependencies]
+pwasm-abi = { path = ".." }
+pwasm-abi-derive = { path = "../derive" }
