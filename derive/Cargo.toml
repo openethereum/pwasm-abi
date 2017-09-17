@@ -1,0 +1,14 @@
+[package]
+name = "pwasm-abi-derive"
+version = "0.1.0"
+authors = ["NikVolf <nikvolf@gmail.com>"]
+
+[profile.release]
+panic = "abort"
+
+[dependencies]
+pwasm-abi = { path = ".." }
+
+[lib]
+name = "pwasm_abi_derive"
+proc-macro = true
