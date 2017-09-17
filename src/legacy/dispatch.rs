@@ -163,6 +163,4 @@ fn table() {
 			None
 		}
 	).expect("dispatch failed");
-
-
 }
