@@ -6,6 +6,7 @@ mod signature;
 mod encode;
 mod decode;
 mod util;
+mod dispatch;
 
 pub use self::param_type::ParamType;
 pub use self::value_type::ValueType;

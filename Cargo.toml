@@ -7,9 +7,10 @@ authors = ["NikVolf <nikvolf@gmail.com>"]
 panic = "abort"
 
 [dependencies]
+tiny-keccak = "*"
 rustc-hex = { version = "1.0", optional = true }
 
-[dependency.byteorder]
+[dependencies.byteorder]
 version = "1"
 default-features = false
 

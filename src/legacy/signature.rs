@@ -36,4 +36,8 @@ impl Signature {
             _ => Err(Error)
         }
     }
+
+    pub fn params(&self) -> &[ParamType] {
+        &self.params
+    }
 }
