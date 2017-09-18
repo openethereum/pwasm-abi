@@ -11,7 +11,7 @@ pub struct HashSignature {
 }
 
 pub struct NamedSignature {
-	name: &'static str,
+	name: Cow<'static, str>,
 	signature: Signature,
 }
 
@@ -25,7 +25,7 @@ impl From<NamedSignature> for HashSignature {
 	fn from(named: NamedSignature) -> HashSignature {
 		let name = named.name;
 		let signature = named.signature;
-		let mut signature_str = String::from(name);
+		let mut signature_str = name.to_string();
 		signature_str.push('(');
 		for (i, p) in signature.params().iter().enumerate() { 
 			p.to_member(&mut signature_str);
@@ -72,13 +72,29 @@ impl Table {
 	}
 }
 
+impl NamedSignature {
+	pub fn new(name: String, signature: Signature) -> Self {
+		NamedSignature {
+			name: Cow::Owned(name),
+			signature: signature,
+		}
+	}
+
+	pub fn new_static(name: &'static str, signature: Signature) -> Self {
+		NamedSignature {
+			name: Cow::Borrowed(name),
+			signature: signature,
+		}
+	}
+}
+
 #[test]
 fn match_signature() {
 
 	use super::ParamType;
 
 	let named = NamedSignature {
-		name: "baz",
+		name: Cow::Borrowed("baz"),
 		signature: Signature::new_void(vec![ParamType::U32, ParamType::Bool]),
 	};
 
@@ -93,7 +109,7 @@ fn match_signature_2() {
 	use super::ParamType;
 
 	let named = NamedSignature {
-		name: "sam",
+		name: Cow::Borrowed("sam"),
 		signature: Signature::new_void(vec![ParamType::Bytes, ParamType::Bool, ParamType::Array(Box::new(ParamType::U256))]),
 	};
 
@@ -111,14 +127,14 @@ fn table() {
 
 	table.push(
 		NamedSignature {
-			name: "baz",
+			name: Cow::Borrowed("baz"),
 			signature: Signature::new_void(vec![ParamType::U32, ParamType::Bool]),
 		}
 	);
 
 	table.push(
 		NamedSignature {
-			name: "sam",
+			name: Cow::Borrowed("sam"),
 			signature: Signature::new_void(vec![ParamType::Bytes, ParamType::Bool, ParamType::Array(Box::new(ParamType::U256))]),
 		}
 	);
