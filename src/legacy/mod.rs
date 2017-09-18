@@ -13,3 +13,7 @@ pub use self::value_type::ValueType;
 pub use self::signature::Signature;
 pub use self::util::Error;
 pub use self::dispatch::{HashSignature, NamedSignature, Table};
+
+pub trait LegacyDispatch {
+	fn dispatch(&mut self, payload: super::lib::Vec<u8>) -> super::lib::Vec<u8>;
+}

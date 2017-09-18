@@ -9,7 +9,7 @@ panic = "abort"
 [dependencies]
 pwasm-abi = { path = ".." }
 quote = "0.3"
-syn = "0.11"
+syn = { version = "0.11", features = ["full"] }
 
 [lib]
 name = "pwasm_abi_derive"
