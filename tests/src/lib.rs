@@ -11,7 +11,6 @@ use alloc::vec::Vec;
 extern crate pwasm_abi as abi;
 extern crate pwasm_abi_derive;
 
-use abi::legacy::LegacyDispatch;
 use pwasm_abi_derive::legacy_dispatch;
 
 #[legacy_dispatch]
