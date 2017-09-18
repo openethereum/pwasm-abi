@@ -33,11 +33,11 @@ fn impl_legacy_dispatch(ast: &syn::Item) -> quote::Tokens {
 		}
 
 		impl<T: #name> Endpoint<T> {
-			fn new(inner: T) -> Self {
+			pub fn new(inner: T) -> Self {
 				Endpoint { inner: inner }
 			}
 
-			fn dispatch(&mut self, payload: Vec<u8>) -> Vec<u8> {
+			pub fn dispatch(&mut self, payload: Vec<u8>) -> Vec<u8> {
 				Vec::new()
 			}
 		}
