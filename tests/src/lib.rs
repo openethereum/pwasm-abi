@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), feature(alloc))]
 #![feature(proc_macro)]
+#![cfg(test)]
 
 #[cfg(not(test))]
 extern crate alloc;
@@ -40,7 +41,7 @@ fn baz_dispatch() {
 	}
 
 	let mut endpoint = Endpoint::new(TestContractInstance);
-	let result = endpoint.dispatch(PAYLOAD_EXAMPLE_1.to_vec());
+	let result = endpoint.dispatch(PAYLOAD_EXAMPLE_1);
 
 	assert_eq!(result, Vec::new());
 }

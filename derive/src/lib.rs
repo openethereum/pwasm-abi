@@ -196,7 +196,7 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 				}
 			}
 
-			pub fn dispatch(&mut self, payload: Vec<u8>) -> Vec<u8> {
+			pub fn dispatch(&mut self, payload: &[u8]) -> Vec<u8> {
 				let inner = &mut self.inner;
 				self.table.dispatch(payload, |method_id, args| {
 					let mut args = args.into_iter();

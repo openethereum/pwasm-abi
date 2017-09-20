@@ -56,18 +56,16 @@ impl Table {
 		self.inner.to_mut().push(signature.into())
 	}
 
-	pub fn dispatch<D>(&self, payload: Vec<u8>, mut d: D) 
+	pub fn dispatch<D>(&self, payload: &[u8], mut d: D) 
 		-> Result<Vec<u8>, Error> 
 		where D: FnMut(u32, Vec<ValueType>) -> Option<ValueType>
 	{
-		let mut payload = payload;
 		if payload.len() < 4 { return Err(Error); }
-		let method_id = BigEndian::read_u32(&payload[..]);
-		payload.drain(0..4);
+		let method_id = BigEndian::read_u32(&payload[0..4]);
 
 		let hash_signature = self.inner.iter().find(|x| x.hash == method_id).ok_or(Error)?;
 
-		let args = hash_signature.signature.decode_invoke(&payload);
+		let args = hash_signature.signature.decode_invoke(&payload[4..]);
 		let result = d(method_id, args);
 
 		Ok(hash_signature.signature.encode_result(result)?)
