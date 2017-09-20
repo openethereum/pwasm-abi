@@ -16,14 +16,19 @@ use pwasm_abi_derive::legacy_dispatch;
 #[legacy_dispatch]
 trait TestContract {
 	fn baz(&mut self, p1: u32, p2: bool);
+	fn boo(&mut self, arg: u32) -> u32;
 }
 
 #[test]
 fn smoky() {
 	struct TestContractInstance;
 	impl TestContract for TestContractInstance {
-		fn baz(&mut self, p1: u32, p2: bool) {
+		fn baz(&mut self, _p1: u32, _p2: bool) {
 			println!("baz");
+		}
+		fn boo(&mut self, _arg: u32) -> u32 {
+			println!("boo");
+			0
 		}
 	}
 

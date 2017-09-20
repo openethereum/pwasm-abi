@@ -1,5 +1,6 @@
 #![feature(alloc)]
 #![feature(proc_macro)]
+#![recursion_limit="128"]
 
 extern crate proc_macro;
 extern crate pwasm_abi as abi;
@@ -76,6 +77,15 @@ fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::legacy::NamedSi
 	}
 }
 
+fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> syn::Path {
+	use abi::legacy::ParamType;
+	match *param_type {
+		ParamType::U32 => syn::parse_path("::pwasm_abi::legacy::ParamType::U32").expect("failed to parse paramtype u32"),
+		ParamType::Bool => syn::parse_path("::pwasm_abi::legacy::ParamType::Bool").expect("failed to parse paramtype bool"),
+		_ => panic!("unsupported signature param type"),
+	}
+}
+
 fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 	let name = &item.ident;
 
@@ -94,25 +104,74 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 
 	let table_signatures = hashed_signatures.clone().into_iter().map(|hs| {
 		let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
-		quote! {
-			::pwasm_abi::legacy::HashSignature::new(
-				#hash_literal, 
-				::pwasm_abi::legacy::Signature::new_void(Vec::new())
-			)
+
+		let param_types = hs.signature().params().iter().map(|p| {
+			let ident = param_type_to_ident(&p);
+			quote! {
+				#ident
+			}
+		});
+
+		if let Some(result_type) = hs.signature().result() {
+			let return_type = param_type_to_ident(result_type);
+			quote! {
+				::pwasm_abi::legacy::HashSignature::new(
+					#hash_literal, 
+					::pwasm_abi::legacy::Signature::new(
+						[#(#param_types),*].to_vec(),
+						Some(#return_type),
+					)
+				)
+			}
+		} else {
+			quote! {
+				::pwasm_abi::legacy::HashSignature::new(
+					#hash_literal, 
+					::pwasm_abi::legacy::Signature::new_void(
+						[#(#param_types),*].to_vec()
+					)
+				)
+			}			
 		}
+
 	});
 
-	let branches = signatures.into_iter().map(|signature| {
-		quote! {
-			_ => { self.inner.baz() }
+	let branches = hashed_signatures.into_iter()
+		.zip(signatures.into_iter())
+		.map(|(hs, ns)| {
+			let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
+			let ident: syn::Ident = ns.name().into();
+
+			if let Some(return_type) = hs.signature().result() {
+				quote! {
+					#hash_literal => {
+						Some(
+							inner.#ident(
+								args.next().expect("Failed to fetch next argument").into(), 
+								args.next().expect("Failed to fetch next argument").into(), 
+							).into()
+						)
+					}
+				}
+			} else {
+				quote! {
+					#hash_literal => { 
+						inner.#ident(
+							args.next().expect("Failed to fetch next argument").into(), 
+							args.next().expect("Failed to fetch next argument").into(), 
+						); 
+						None 
+					}
+				}
+			}
 		}
-	});
+	);
 
 	let dispatch_table = quote! {
 		{
 			let mut table = ::pwasm_abi::legacy::Table::new(
 				[
-					#(#table_signatures)*
+					#(#table_signatures),*
 				].to_vec()
 			);
 			table
@@ -136,11 +195,14 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 			}
 
 			pub fn dispatch(&mut self, payload: Vec<u8>) -> Vec<u8> {
-				// match &payload[0] {
-				// 	#(#branches)*
-				// };
-
-				Vec::new()
+				let inner = &mut self.inner;
+				self.table.dispatch(payload, |method_id, args| {
+					let mut args = args.into_iter();
+					match method_id {
+				 		#(#branches),*,
+						_ => panic!("Invalid method signature"),
+					}
+				}).expect("Failed abi dispatch")
 			}
 		}
 	}

@@ -88,6 +88,10 @@ impl NamedSignature {
 			signature: signature,
 		}
 	}
+
+	pub fn name(&self) -> &str {
+		self.name.as_ref()
+	}
 }
 
 impl HashSignature {

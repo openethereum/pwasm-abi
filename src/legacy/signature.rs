@@ -43,4 +43,8 @@ impl Signature {
     pub fn params(&self) -> &[ParamType] {
         &self.params
     }
+
+    pub fn result(&self) -> Option<&ParamType> {
+        self.result.as_ref()
+    }
 }
