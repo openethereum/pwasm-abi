@@ -4,6 +4,7 @@ use super::{ParamType, ValueType, Error};
 use super::decode::decode;
 use super::encode::encode;
 
+#[derive(Clone)]
 pub struct Signature {
     params: Vec<ParamType>,
     result: Option<ParamType>,

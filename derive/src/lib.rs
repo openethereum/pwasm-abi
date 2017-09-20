@@ -87,23 +87,59 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 	let signatures: Vec<abi::legacy::NamedSignature> = 
 		trait_items.iter().filter_map(trait_item_to_signature).collect();
 
-	let literal = syn::Lit::Int(signatures.len() as u64, syn::IntTy::U32);
+	let hashed_signatures: Vec<abi::legacy::HashSignature> = 
+		signatures.clone().into_iter()
+			.map(From::from)
+			.collect();
+
+	let table_signatures = hashed_signatures.clone().into_iter().map(|hs| {
+		let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
+		quote! {
+			::pwasm_abi::legacy::HashSignature::new(
+				#hash_literal, 
+				::pwasm_abi::legacy::Signature::new_void(Vec::new())
+			)
+		}
+	});
+
+	let branches = signatures.into_iter().map(|signature| {
+		quote! {
+			_ => { self.inner.baz() }
+		}
+	});
+
+	let dispatch_table = quote! {
+		{
+			let mut table = ::pwasm_abi::legacy::Table::new(
+				[
+					#(#table_signatures)*
+				].to_vec()
+			);
+			table
+		}
+	};
 
 	quote! {
 		#item
 
-		const ENDPOINT_METHOD_COUNT: u32 = #literal;
-
 		struct Endpoint<T: #name> {
 			inner: T,
+			table: ::pwasm_abi::legacy::Table,
 		}
 
 		impl<T: #name> Endpoint<T> {
 			pub fn new(inner: T) -> Self {
-				Endpoint { inner: inner }
+				Endpoint { 
+					inner: inner,
+					table: #dispatch_table,
+				}
 			}
 
 			pub fn dispatch(&mut self, payload: Vec<u8>) -> Vec<u8> {
+				// match &payload[0] {
+				// 	#(#branches)*
+				// };
+
 				Vec::new()
 			}
 		}

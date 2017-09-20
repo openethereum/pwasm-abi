@@ -8,7 +8,7 @@ extern crate alloc;
 #[cfg(not(test))]
 use alloc::vec::Vec;
 
-extern crate pwasm_abi as abi;
+extern crate pwasm_abi;
 extern crate pwasm_abi_derive;
 
 use pwasm_abi_derive::legacy_dispatch;

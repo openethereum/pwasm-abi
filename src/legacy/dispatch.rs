@@ -5,11 +5,13 @@ use lib::*;
 use super::{Signature, ValueType};
 use super::util::Error;
 
+#[derive(Clone)]
 pub struct HashSignature {
     hash: u32,
     signature: Signature,
 }
 
+#[derive(Clone)]
 pub struct NamedSignature {
 	name: Cow<'static, str>,
 	signature: Signature,
@@ -17,8 +19,8 @@ pub struct NamedSignature {
 
 #[derive(Default)]
 pub struct Table {
-	// vec instead of hashmap since dispatch table is usually small (todo: maybe add variant with hash tables)
-	inner: Vec<HashSignature>,
+	// slice instead of hashmap since dispatch table is usually small (todo: maybe add variant with hash tables)
+	pub inner: Cow<'static, [HashSignature]>,
 }
 
 impl From<NamedSignature> for HashSignature {
@@ -47,11 +49,11 @@ impl From<NamedSignature> for HashSignature {
 
 impl Table {
 	pub fn new(inner: Vec<HashSignature>) -> Self {
-		Table { inner: inner }
+		Table { inner: Cow::from(inner) }
 	}
 
 	pub fn push<S>(&mut self, signature: S) where S: Into<HashSignature> {
-		self.inner.push(signature.into())
+		self.inner.to_mut().push(signature.into())
 	}
 
 	pub fn dispatch<D>(&self, payload: Vec<u8>, mut d: D) 
@@ -85,6 +87,23 @@ impl NamedSignature {
 			name: Cow::Borrowed(name),
 			signature: signature,
 		}
+	}
+}
+
+impl HashSignature {
+	pub fn new(hash: u32, signature: Signature) -> Self {
+		HashSignature {
+			hash: hash,
+			signature: signature,
+		}
+	}
+
+	pub fn hash(&self) -> u32 {
+		self.hash
+	}
+
+	pub fn signature(&self) -> &Signature {
+		&self.signature
 	}
 }
 

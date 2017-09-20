@@ -1,7 +1,7 @@
 use lib::*;
 
 /// Param type subset generatable by WASM contract
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ParamType {
 	// Unsigned integer (mapped from u32)
 	U32,
