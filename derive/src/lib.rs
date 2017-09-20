@@ -142,13 +142,16 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 			let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
 			let ident: syn::Ident = ns.name().into();
 
+			let args_line = std::iter::repeat(
+				quote! { args.next().expect("Failed to fetch next argument").into() }
+			).take(hs.signature().params().len());
+
 			if let Some(return_type) = hs.signature().result() {
 				quote! {
 					#hash_literal => {
 						Some(
 							inner.#ident(
-								args.next().expect("Failed to fetch next argument").into(), 
-								args.next().expect("Failed to fetch next argument").into(), 
+								#(#args_line),*
 							).into()
 						)
 					}
@@ -157,8 +160,7 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 				quote! {
 					#hash_literal => { 
 						inner.#ident(
-							args.next().expect("Failed to fetch next argument").into(), 
-							args.next().expect("Failed to fetch next argument").into(), 
+							#(#args_line),*
 						); 
 						None 
 					}
