@@ -24,24 +24,40 @@ pub fn legacy_dispatch(args: TokenStream, input: TokenStream) -> TokenStream {
 	generated.parse().expect("Failed to parse generated input")
 }
 
-fn ty_to_param_type(ty: &syn::Ty) -> Vec<abi::legacy::ParamType> {
-	let mut result = Vec::new();
+fn ty_to_param_type(ty: &syn::Ty) -> abi::legacy::ParamType {
 	match *ty {
 		syn::Ty::Path(None, ref path) => {
-			match path.segments.last().unwrap().ident.to_string().as_ref() {
-				"u32" => result.push(abi::legacy::ParamType::U32),
-				"bool" => result.push(abi::legacy::ParamType::Bool),
+			let last_path = path.segments.last().unwrap();
+			match last_path.ident.to_string().as_ref() {
+				"u32" => abi::legacy::ParamType::U32,
+				"i32" => abi::legacy::ParamType::I32,
+				"u64" => abi::legacy::ParamType::U64,
+				"i64" => abi::legacy::ParamType::I64,
+				"U256" => abi::legacy::ParamType::U256,
+				"H256" => abi::legacy::ParamType::H256,
+				"Vec" => {
+					match last_path.parameters {
+						syn::PathParameters::AngleBracketed(ref param_data) => {
+							let vec_arg = param_data.types.last().unwrap();
+							if let syn::Ty::Path(None, ref nested_path) = *vec_arg {
+								let ident: String = nested_path.segments.last().unwrap().ident.to_string();
+								let ident_ref: &str = ident.as_ref();
+								if "u8" == ident_ref {
+									return abi::legacy::ParamType::Bytes;
+								}
+							}
+							abi::legacy::ParamType::Array(Box::new(ty_to_param_type(vec_arg)))
+						},
+						_ => panic!("Unsupported vec arguments"),
+					}
+				},
+				"String" => abi::legacy::ParamType::String,
+				"bool" => abi::legacy::ParamType::Bool,
 				ref val @ _ => panic!("Unable to handle param of type {}: not supported by abi", val)
-			}
-		},
-		syn::Ty::Tup(ref tys) => {
-			for ty in tys {
-				result.extend(ty_to_param_type(ty))
 			}
 		},
 		ref val @ _ => panic!("Unable to handle param of type {:?}: not supported by abi", val),
 	}
-	result
 }
 
 fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::legacy::Signature {
@@ -50,7 +66,7 @@ fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::legacy::Signature {
 	for fn_arg in method_sig.decl.inputs.iter() {
 		match *fn_arg {
 			syn::FnArg::Captured(_, ref ty) => {
-				params.extend(ty_to_param_type(ty));
+				params.push(ty_to_param_type(ty));
 			},
 			syn::FnArg::SelfValue(_) => { panic!("cannot use self by value"); },
 			_ => {},
@@ -87,6 +103,8 @@ fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> quote::Tokens {
 		ParamType::Bool => quote! { ::pwasm_abi::legacy::ParamType::Bool },
 		ParamType::U256 => quote! { ::pwasm_abi::legacy::ParamType::U256 },
 		ParamType::H256 => quote! { ::pwasm_abi::legacy::ParamType::H256 },
+		ParamType::Address => quote! { ::pwasm_abi::legacy::ParamType::Address },
+		ParamType::Bytes => quote! { ::pwasm_abi::legacy::ParamType::Bytes },
 		ParamType::Array(ref t) => {
 			let nested = param_type_to_ident(t);
 			quote! {
