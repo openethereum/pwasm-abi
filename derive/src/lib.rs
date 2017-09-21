@@ -77,11 +77,23 @@ fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::legacy::NamedSi
 	}
 }
 
-fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> syn::Path {
+fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> quote::Tokens {
 	use abi::legacy::ParamType;
 	match *param_type {
-		ParamType::U32 => syn::parse_path("::pwasm_abi::legacy::ParamType::U32").expect("failed to parse paramtype u32"),
-		ParamType::Bool => syn::parse_path("::pwasm_abi::legacy::ParamType::Bool").expect("failed to parse paramtype bool"),
+		ParamType::U32 => quote! { pwasm_abi::legacy::ParamType::U32 },
+		ParamType::I32 => quote! { pwasm_abi::legacy::ParamType::U32 },
+		ParamType::U64 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
+		ParamType::I64 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
+		ParamType::Bool => quote! { ::pwasm_abi::legacy::ParamType::Bool },
+		ParamType::U256 => quote! { ::pwasm_abi::legacy::ParamType::U256 },
+		ParamType::H256 => quote! { ::pwasm_abi::legacy::ParamType::H256 },
+		ParamType::Array(ref t) => {
+			let nested = param_type_to_ident(t);
+			quote! {
+				::pwasm_abi::legacy::ParamType::Array(new Box(#nested))
+			}
+		},
+		ParamType::String => quote! { ::pwasm_abi::legacy::ParamType::String },
 		_ => panic!("unsupported signature param type"),
 	}
 }
