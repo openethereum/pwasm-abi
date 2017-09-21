@@ -48,3 +48,30 @@ impl From<ValueType> for bool {
         }
     }
 }
+
+impl<T: From<ValueType>> Into<Vec<T>> for ValueType {
+    fn into(self) -> Vec<T> {
+        match self {
+            ValueType::Array(v) => v.into_iter().map(From::from).collect(),
+             _ => panic!("invalid abi generated for Vec<T> argument"),
+        }
+    }
+}
+
+impl Into<Vec<u8>> for ValueType {
+    fn into(self) -> Vec<u8> {
+        match self {
+             ValueType::Bytes(b) => b,
+             _ => panic!("invalid abi generated for Vec<u8> argument"),
+        }
+    }
+}
+
+impl From<ValueType> for [u8; 32] {
+    fn from(val: ValueType) -> Self {
+        match val {
+            ValueType::U256(v) | ValueType::H256(v) => v,
+            _ => panic!("invalid abi generated for bool argument"),
+        }
+    }    
+}
