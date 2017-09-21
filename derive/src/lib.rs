@@ -40,9 +40,7 @@ fn ty_to_param_type(ty: &syn::Ty) -> abi::legacy::ParamType {
 						syn::PathParameters::AngleBracketed(ref param_data) => {
 							let vec_arg = param_data.types.last().unwrap();
 							if let syn::Ty::Path(None, ref nested_path) = *vec_arg {
-								let ident: String = nested_path.segments.last().unwrap().ident.to_string();
-								let ident_ref: &str = ident.as_ref();
-								if "u8" == ident_ref {
+								if "u8" == nested_path.segments.last().unwrap().ident.to_string() {
 									return abi::legacy::ParamType::Bytes;
 								}
 							}
@@ -108,7 +106,7 @@ fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> quote::Tokens {
 		ParamType::Array(ref t) => {
 			let nested = param_type_to_ident(t);
 			quote! {
-				::pwasm_abi::legacy::ParamType::Array(new Box(#nested))
+				::pwasm_abi::legacy::ParamType::Array(Box::new(#nested))
 			}
 		},
 		ParamType::String => quote! { ::pwasm_abi::legacy::ParamType::String },

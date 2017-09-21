@@ -21,7 +21,7 @@ type H256 = [u8; 32];
 trait TestContract {
 	fn baz(&mut self, _p1: u32, _p2: bool);
 	fn boo(&mut self, _arg: u32) -> u32;
-	fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<[u8; 32]>);
+	fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<U256>);
 }
 
 const PAYLOAD_SAMPLE_1: &[u8] = &[
@@ -32,37 +32,65 @@ const PAYLOAD_SAMPLE_1: &[u8] = &[
 
 #[test]
 fn baz_dispatch() {
-	struct TestContractInstance;
+	#[derive(Default)]
+	struct TestContractInstance {
+		called: bool,
+		called_wrong: bool,
+	}
+
 	impl TestContract for TestContractInstance {
 		fn baz(&mut self, p1: u32, p2: bool) {
 			assert_eq!(p1, 69);
 			assert_eq!(p2, true);
+			self.called = true;
 		}
 		fn boo(&mut self, _arg: u32) -> u32 {
-			println!("boo");
+			self.called_wrong = true;
 			0
 		}
 		fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<[u8; 32]>) {
+			self.called_wrong = true;
 		}
 	}
 
-	let mut endpoint = Endpoint::new(TestContractInstance);
-	let result = endpoint.dispatch(PAYLOAD_EXAMPLE_1);
+	let instance = TestContractInstance::default();
+	let mut endpoint = Endpoint::new(instance);
+	let result = endpoint.dispatch(PAYLOAD_SAMPLE_1);
 
 	assert_eq!(result, Vec::new());
+
+	assert!(instance.called);
+	assert!(!instance.called_wrong);
 }
 
 #[test]
 fn sam_dispatch() {
-	struct TestContractInstance;
+	#[derive(Default)]
+	struct TestContractInstance {
+		called: bool,
+		called_wrong: bool,
+	}
+
 	impl TestContract for TestContractInstance {
 		fn sam(&mut self, p1: Vec<u8>, p2: bool, p3: Vec<U256>) {
 			assert_eq!(p1, vec![100, 97, 118, 101]);
+			self.called = true;
 		}
+		fn baz(&mut self, _p1: u32, _p2: bool) {
+			self.called_wrong = true;
+		}
+		fn boo(&mut self, _arg: u32) -> u32 {
+			self.called_wrong = true;
+			0
+		}		
 	}
 
-	let mut endpoint = Endpoint::new(TestContractInstance);
+	let instance = TestContractInstance::default();
+	let mut endpoint = Endpoint::new(instance);
 	let result = endpoint.dispatch(PAYLOAD_SAMPLE_1);
 
 	assert_eq!(result, Vec::new());
+
+	assert!(instance.called);
+	assert!(!instance.called_wrong);
 }
