@@ -93,8 +93,8 @@ fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::legacy::NamedSi
 fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> quote::Tokens {
 	use abi::legacy::ParamType;
 	match *param_type {
-		ParamType::U32 => quote! { pwasm_abi::legacy::ParamType::U32 },
-		ParamType::I32 => quote! { pwasm_abi::legacy::ParamType::U32 },
+		ParamType::U32 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
+		ParamType::I32 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
 		ParamType::U64 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
 		ParamType::I64 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
 		ParamType::Bool => quote! { ::pwasm_abi::legacy::ParamType::Bool },
