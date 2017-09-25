@@ -9,7 +9,6 @@ extern crate syn;
 extern crate quote;
 
 #[cfg(not(feature="std"))]
-#[macro_use]
 extern crate alloc;
 
 use alloc::vec::Vec;
@@ -17,8 +16,8 @@ use alloc::vec::Vec;
 use proc_macro::TokenStream;
 
 #[proc_macro_attribute]
-pub fn legacy_dispatch(args: TokenStream, input: TokenStream) -> TokenStream {	
-	let source = input.to_string();   
+pub fn legacy_dispatch(_args: TokenStream, input: TokenStream) -> TokenStream {
+	let source = input.to_string();
 	let ast = syn::parse_item(&source).expect("Failed to parse derive input");
 	let generated = impl_legacy_dispatch(&ast);
 	generated.parse().expect("Failed to parse generated input")
@@ -60,7 +59,7 @@ fn ty_to_param_type(ty: &syn::Ty) -> abi::legacy::ParamType {
 
 fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::legacy::Signature {
 	let mut params = Vec::new();
-	
+
 	for fn_arg in method_sig.decl.inputs.iter() {
 		match *fn_arg {
 			syn::FnArg::Captured(_, ref ty) => {
@@ -110,7 +109,6 @@ fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> quote::Tokens {
 			}
 		},
 		ParamType::String => quote! { ::pwasm_abi::legacy::ParamType::String },
-		_ => panic!("unsupported signature param type"),
 	}
 }
 
@@ -122,10 +120,10 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 		_ => { panic!("Dispatch trait can work with trait declarations only!"); }
 	};
 
-	let signatures: Vec<abi::legacy::NamedSignature> = 
+	let signatures: Vec<abi::legacy::NamedSignature> =
 		trait_items.iter().filter_map(trait_item_to_signature).collect();
 
-	let hashed_signatures: Vec<abi::legacy::HashSignature> = 
+	let hashed_signatures: Vec<abi::legacy::HashSignature> =
 		signatures.clone().into_iter()
 			.map(From::from)
 			.collect();
@@ -144,7 +142,7 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 			let return_type = param_type_to_ident(result_type);
 			quote! {
 				::pwasm_abi::legacy::HashSignature::new(
-					#hash_literal, 
+					#hash_literal,
 					::pwasm_abi::legacy::Signature::new(
 						[#(#param_types),*].to_vec(),
 						Some(#return_type),
@@ -154,12 +152,12 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 		} else {
 			quote! {
 				::pwasm_abi::legacy::HashSignature::new(
-					#hash_literal, 
+					#hash_literal,
 					::pwasm_abi::legacy::Signature::new_void(
 						[#(#param_types),*].to_vec()
 					)
 				)
-			}			
+			}
 		}
 
 	});
@@ -174,7 +172,7 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 				quote! { args.next().expect("Failed to fetch next argument").into() }
 			).take(hs.signature().params().len());
 
-			if let Some(return_type) = hs.signature().result() {
+			if let Some(_) = hs.signature().result() {
 				quote! {
 					#hash_literal => {
 						Some(
@@ -186,11 +184,11 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 				}
 			} else {
 				quote! {
-					#hash_literal => { 
+					#hash_literal => {
 						inner.#ident(
 							#(#args_line),*
-						); 
-						None 
+						);
+						None
 					}
 				}
 			}
@@ -218,7 +216,7 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 
 		impl<T: #name> Endpoint<T> {
 			pub fn new(inner: T) -> Self {
-				Endpoint { 
+				Endpoint {
 					inner: inner,
 					table: #dispatch_table,
 				}
