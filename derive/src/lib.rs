@@ -209,7 +209,7 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 	quote! {
 		#item
 
-		struct Endpoint<T: #name> {
+		pub struct Endpoint<T: #name> {
 			inner: T,
 			table: ::pwasm_abi::legacy::Table,
 		}
