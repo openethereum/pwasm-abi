@@ -1,0 +1,21 @@
+[
+    {
+        "type": "function",
+        "name": "baz",
+        "inputs": [
+            { "name":"p1", "type": "uint32" },
+            { "name":"p2", "type": "bool" }
+        ],
+        "outputs": []
+    },
+    {
+        "type": "function",
+        "name": "sam",
+        "inputs": [
+            { "name":"p1", "type": "bytes" },
+            { "name":"p2", "type": "bool" },
+            { "name":"p2", "type": "uint256[]" }
+        ],
+        "outputs": []
+    }
+]

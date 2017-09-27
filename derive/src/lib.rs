@@ -16,10 +16,15 @@ use alloc::vec::Vec;
 use proc_macro::TokenStream;
 
 #[proc_macro_attribute]
-pub fn legacy_dispatch(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn legacy_dispatch(args: TokenStream, input: TokenStream) -> TokenStream {
+	let args_str = args.to_string();
+	let endpoint_name = args_str.trim_matches(&['(', ')', '"', ' '][..]);
+
 	let source = input.to_string();
 	let ast = syn::parse_item(&source).expect("Failed to parse derive input");
-	let generated = impl_legacy_dispatch(&ast);
+
+	let generated = impl_legacy_dispatch(&ast, &endpoint_name);
+
 	generated.parse().expect("Failed to parse generated input")
 }
 
@@ -112,7 +117,7 @@ fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> quote::Tokens {
 	}
 }
 
-fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
+fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens {
 	let name = &item.ident;
 
 	let trait_items = match item.node {
@@ -122,6 +127,18 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 
 	let signatures: Vec<abi::legacy::NamedSignature> =
 		trait_items.iter().filter_map(trait_item_to_signature).collect();
+
+	let ctor_branch = signatures.iter().find(|ns| ns.name() == "ctor").map(|ns| {
+		let args_line = std::iter::repeat(
+			quote! { args.next().expect("Failed to fetch next argument").into() }
+		).take(ns.signature().params().len());
+
+		quote! {
+			inner.ctor(
+				#(#args_line),*
+			);
+		}
+	});
 
 	let hashed_signatures: Vec<abi::legacy::HashSignature> =
 		signatures.clone().into_iter()
@@ -159,7 +176,6 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 				)
 			}
 		}
-
 	});
 
 	let branches = hashed_signatures.into_iter()
@@ -197,7 +213,7 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 
 	let dispatch_table = quote! {
 		{
-			let mut table = ::pwasm_abi::legacy::Table::new(
+			let table = ::pwasm_abi::legacy::Table::new(
 				[
 					#(#table_signatures),*
 				].to_vec()
@@ -206,15 +222,17 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 		}
 	};
 
+	let endpoint_ident: syn::Ident = endpoint_name.into();
+
 	quote! {
 		#item
 
-		pub struct Endpoint<T: #name> {
+		pub struct #endpoint_ident<T: #name> {
 			inner: T,
 			table: ::pwasm_abi::legacy::Table,
 		}
 
-		impl<T: #name> Endpoint<T> {
+		impl<T: #name> #endpoint_ident<T> {
 			pub fn new(inner: T) -> Self {
 				Endpoint {
 					inner: inner,
@@ -231,6 +249,14 @@ fn impl_legacy_dispatch(item: &syn::Item) -> quote::Tokens {
 						_ => panic!("Invalid method signature"),
 					}
 				}).expect("Failed abi dispatch")
+			}
+
+			#[allow(unused_variables)]
+			pub fn dispatch_ctor(&mut self, payload: &[u8]) {
+				let inner = &mut self.inner;
+				self.table.fallback_dispatch(payload, |args| {
+					#ctor_branch
+				}).expect("Failed fallback abi dispatch");
 			}
 		}
 	}
