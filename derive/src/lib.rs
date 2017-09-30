@@ -48,7 +48,7 @@ fn ty_to_param_type(ty: &syn::Ty) -> abi::legacy::ParamType {
 									return abi::legacy::ParamType::Bytes;
 								}
 							}
-							abi::legacy::ParamType::Array(Box::new(ty_to_param_type(vec_arg)))
+							abi::legacy::ParamType::Array(ty_to_param_type(vec_arg).into())
 						},
 						_ => panic!("Unsupported vec arguments"),
 					}
@@ -108,9 +108,9 @@ fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> quote::Tokens {
 		ParamType::Address => quote! { ::pwasm_abi::legacy::ParamType::Address },
 		ParamType::Bytes => quote! { ::pwasm_abi::legacy::ParamType::Bytes },
 		ParamType::Array(ref t) => {
-			let nested = param_type_to_ident(t);
+			let nested = param_type_to_ident(t.as_ref());
 			quote! {
-				::pwasm_abi::legacy::ParamType::Array(Box::new(#nested))
+				::pwasm_abi::legacy::ParamType::Array(::pwasm_abi::legacy::ArrayRef::Static(&#nested))
 			}
 		},
 		ParamType::String => quote! { ::pwasm_abi::legacy::ParamType::String },
@@ -158,22 +158,26 @@ fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens 
 		if let Some(result_type) = hs.signature().result() {
 			let return_type = param_type_to_ident(result_type);
 			quote! {
-				::pwasm_abi::legacy::HashSignature::new(
-					#hash_literal,
-					::pwasm_abi::legacy::Signature::new(
-						[#(#param_types),*].to_vec(),
-						Some(#return_type),
+				{
+					const SIGNATURE: &'static [::pwasm_abi::legacy::ParamType] = &[#(#param_types),*];
+					::pwasm_abi::legacy::HashSignature::new(
+						#hash_literal,
+						::pwasm_abi::legacy::Signature::new(
+							SIGNATURE,
+							Some(#return_type),
+						)
 					)
-				)
+				}
 			}
 		} else {
 			quote! {
-				::pwasm_abi::legacy::HashSignature::new(
-					#hash_literal,
-					::pwasm_abi::legacy::Signature::new_void(
-						[#(#param_types),*].to_vec()
-					)
-				)
+				::pwasm_abi::legacy::HashSignature {
+					hash: #hash_literal,
+					signature: ::pwasm_abi::legacy::Signature {
+						params: Cow::Borrowed(&[#(#param_types),*]),
+						result: None,
+					}
+				}
 			}
 		}
 	});
@@ -213,12 +217,11 @@ fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens 
 
 	let dispatch_table = quote! {
 		{
-			let table = ::pwasm_abi::legacy::Table::new(
-				[
-					#(#table_signatures),*
-				].to_vec()
-			);
-			table
+			const TABLE: &'static ::pwasm_abi::legacy::Table = &::pwasm_abi::legacy::Table {
+				inner: Cow::Borrowed(&[#(#table_signatures),*]),
+				fallback: None,
+			};
+			TABLE
 		}
 	};
 
@@ -229,7 +232,7 @@ fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens 
 
 		pub struct #endpoint_ident<T: #name> {
 			inner: T,
-			table: ::pwasm_abi::legacy::Table,
+			table: &'static ::pwasm_abi::legacy::Table,
 		}
 
 		impl<T: #name> #endpoint_ident<T> {

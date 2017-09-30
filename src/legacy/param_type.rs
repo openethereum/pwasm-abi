@@ -20,7 +20,7 @@ pub enum ParamType {
 	// Byte array (mapped from Vec<u8>)
 	Bytes,
 	// Variable-length array (mapped from Vec<T>)
-	Array(Box<ParamType>),
+	Array(ArrayRef),
 	// Boolean (mapped from bool)
 	Bool,
 	// String (mapped from String/str)
@@ -40,7 +40,28 @@ impl ParamType {
 			ParamType::Bytes => s.push_str("bytes"),
 			ParamType::Bool => s.push_str("bool"),
 			ParamType::String => s.push_str("string"),
-			ParamType::Array(ref p_n) => { p_n.to_member(s); s.push_str("[]"); },
+			ParamType::Array(ref p_n) => { p_n.as_ref().to_member(s); s.push_str("[]"); },
 		}
+	}
+}
+
+#[derive(Debug, Clone)]
+pub enum ArrayRef {
+	Owned(Box<ParamType>),
+	Static(&'static ParamType),
+}
+
+impl ArrayRef {
+	pub fn as_ref(&self) -> &ParamType {
+		match *self {
+			ArrayRef::Owned(ref p) => p.as_ref(),
+			ArrayRef::Static(p) => p,
+		}
+	}
+}
+
+impl From<ParamType> for ArrayRef {
+	fn from(p: ParamType) -> Self {
+		ArrayRef::Owned(Box::new(p))
 	}
 }

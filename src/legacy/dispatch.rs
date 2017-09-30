@@ -7,8 +7,8 @@ use super::util::Error;
 
 #[derive(Clone)]
 pub struct HashSignature {
-    hash: u32,
-    signature: Signature,
+    pub hash: u32,
+    pub signature: Signature,
 }
 
 #[derive(Clone)]
@@ -51,20 +51,25 @@ impl From<NamedSignature> for HashSignature {
 }
 
 impl Table {
-	pub fn new(inner: Vec<HashSignature>) -> Self {
-		Table { inner: Cow::from(inner), fallback: None }
+	pub fn new<T>(inner: T) -> Self
+		where T: Into<Cow<'static, [HashSignature]>>
+	{
+		Table { inner: inner.into(), fallback: None }
 	}
 
-	pub fn with_fallback(inner: Vec<HashSignature>, fallback: Signature) -> Self {
-		Table { inner: Cow::from(inner), fallback: Some(fallback) }
+	pub fn with_fallback<T>(inner: T, fallback: Signature) -> Self
+		where T: Into<Cow<'static, [HashSignature]>>
+	{
+		Table { inner: inner.into(), fallback: Some(fallback) }
 	}
 
-	pub fn push<S>(&mut self, signature: S) where S: Into<HashSignature> {
+	pub fn push<S>(&mut self, signature: S)
+		where S: Into<HashSignature>
+	{
 		self.inner.to_mut().push(signature.into())
 	}
 
-	pub fn dispatch<D>(&self, payload: &[u8], mut d: D)
-		-> Result<Vec<u8>, Error>
+	pub fn dispatch<D>(&self, payload: &[u8], mut d: D) -> Result<Vec<u8>, Error>
 		where D: FnMut(u32, Vec<ValueType>) -> Option<ValueType>
 	{
 		if payload.len() < 4 { return Err(Error); }
@@ -93,16 +98,11 @@ impl Table {
 }
 
 impl NamedSignature {
-	pub fn new(name: String, signature: Signature) -> Self {
+	pub fn new<T>(name: T, signature: Signature) -> Self
+		where T: Into<Cow<'static, str>>
+	{
 		NamedSignature {
-			name: Cow::Owned(name),
-			signature: signature,
-		}
-	}
-
-	pub fn new_static(name: &'static str, signature: Signature) -> Self {
-		NamedSignature {
-			name: Cow::Borrowed(name),
+			name: name.into(),
 			signature: signature,
 		}
 	}
@@ -155,7 +155,7 @@ fn match_signature_2() {
 
 	let named = NamedSignature {
 		name: Cow::Borrowed("sam"),
-		signature: Signature::new_void(vec![ParamType::Bytes, ParamType::Bool, ParamType::Array(Box::new(ParamType::U256))]),
+		signature: Signature::new_void(vec![ParamType::Bytes, ParamType::Bool, ParamType::Array(ParamType::U256.into())]),
 	};
 
 	let hashed: HashSignature = named.into();
@@ -180,7 +180,7 @@ fn table() {
 	table.push(
 		NamedSignature {
 			name: Cow::Borrowed("sam"),
-			signature: Signature::new_void(vec![ParamType::Bytes, ParamType::Bool, ParamType::Array(Box::new(ParamType::U256))]),
+			signature: Signature::new_void(vec![ParamType::Bytes, ParamType::Bool, ParamType::Array(ParamType::U256.into())]),
 		}
 	);
 

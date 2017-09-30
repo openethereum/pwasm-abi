@@ -6,28 +6,32 @@ use super::encode::encode;
 
 #[derive(Clone)]
 pub struct Signature {
-    params: Vec<ParamType>,
-    result: Option<ParamType>,
+    pub params: Cow<'static, [ParamType]>,
+    pub result: Option<ParamType>,
 }
 
 impl Signature {
 
-    pub fn new(params: Vec<ParamType>, result: Option<ParamType>) -> Signature {
+    pub fn new<T>(params: T, result: Option<ParamType>) -> Self
+        where T: Into<Cow<'static, [ParamType]>>
+    {
         Signature {
-            params: params,
+            params: params.into(),
             result: result,
         }
     }
 
-    pub fn new_void(params: Vec<ParamType>) -> Signature {
+    pub fn new_void<T>(params: T) -> Self
+        where T: Into<Cow<'static, [ParamType]>>
+    {
         Signature {
-            params: params,
+            params: params.into(),
             result: None,
         }
     }
 
     pub fn decode_invoke(&self, payload: &[u8]) -> Vec<ValueType> {
-        decode(&self.params, payload).expect("Failed signature paring is a valid panic")
+        decode(&self.params.as_ref(), payload).expect("Failed signature paring is a valid panic")
     }
 
     pub fn encode_result(&self, result: Option<ValueType>) -> Result<Vec<u8>, Error> {
@@ -41,7 +45,7 @@ impl Signature {
     }
 
     pub fn params(&self) -> &[ParamType] {
-        &self.params
+        self.params.as_ref()
     }
 
     pub fn result(&self) -> Option<&ParamType> {

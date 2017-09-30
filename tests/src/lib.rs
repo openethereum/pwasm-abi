@@ -1,13 +1,17 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), feature(alloc))]
 #![feature(proc_macro)]
-#![cfg(test)]
 
 #[cfg(not(test))]
 extern crate alloc;
 
 #[cfg(not(test))]
 use alloc::vec::Vec;
+
+#[cfg(not(test))]
+use alloc::borrow::Cow;
+#[cfg(test)]
+use std::borrow::Cow;
 
 extern crate pwasm_abi;
 extern crate pwasm_abi_derive;
@@ -19,6 +23,7 @@ type U256 = [u8; 32];
 #[legacy_dispatch(Endpoint)]
 pub trait TestContract {
 	fn ctor(&mut self);
+
 	fn baz(&mut self, _p1: u32, _p2: bool);
 	fn boo(&mut self, _arg: u32) -> u32;
 	fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<U256>);

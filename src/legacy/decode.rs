@@ -201,7 +201,7 @@ fn decode_param(param: &ParamType, slices: &[Hash], offset: usize) -> Result<Dec
 			let mut new_offset = len_offset + 1;
 
 			for _ in 0..len {
-				let res = try!(decode_param(t, &slices, new_offset));
+				let res = try!(decode_param(t.as_ref(), &slices, new_offset));
 				new_offset = res.new_offset;
 				tokens.push(res.token);
 			}
@@ -222,7 +222,7 @@ mod tests {
 
 	use self::hex::FromHex;
 	use super::decode;
-    use super::super::{ValueType, ParamType};
+    use super::super::{ValueType, ParamType, ArrayRef};
 
 	#[test]
 	fn decode_address() {
@@ -265,7 +265,7 @@ mod tests {
 		let address2 = ValueType::Address([0x22u8; 20]);
 		let addresses = ValueType::Array(vec![address1, address2]);
 		let expected = vec![addresses];
-		let decoded = decode(&[ParamType::Array(Box::new(ParamType::Address))], &encoded).unwrap();
+		let decoded = decode(&[ParamType::Array(ParamType::Address.into())], &encoded).unwrap();
 		assert_eq!(decoded, expected);
 	}
 
@@ -289,9 +289,9 @@ mod tests {
 		let dynamic = ValueType::Array(vec![array0, array1]);
 		let expected = vec![dynamic];
 		let decoded = decode(&[
-			ParamType::Array(Box::new(
-				ParamType::Array(Box::new(ParamType::Address))
-			))
+			ParamType::Array(
+				ParamType::Array(ParamType::Address.into()).into()
+			)
 		], &encoded).unwrap();
 		assert_eq!(decoded, expected);
 	}
@@ -319,9 +319,9 @@ mod tests {
 		let dynamic = ValueType::Array(vec![array0, array1]);
 		let expected = vec![dynamic];
 		let decoded = decode(&[
-			ParamType::Array(Box::new(
-				ParamType::Array(Box::new(ParamType::Address))
-			))
+			ParamType::Array(
+				ParamType::Array(ParamType::Address.into()).into()
+			)
 		], &encoded).unwrap();
 		assert_eq!(decoded, expected);
 	}
@@ -379,6 +379,14 @@ mod tests {
 		let expected = vec![s];
 		let decoded = decode(&[ParamType::String], &encoded).unwrap();
 		assert_eq!(decoded, expected);
+	}
+
+	#[test]
+	fn static_refs() {
+		const signature_dispatch: &'static [ParamType] = &[
+			ParamType::Array(ArrayRef::Static(&ParamType::U256)),
+			ParamType::Array(ArrayRef::Static(&ParamType::Address)),
+		];
 	}
 }
 
