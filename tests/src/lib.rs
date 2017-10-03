@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), feature(alloc))]
 #![feature(proc_macro)]
+#![cfg(test)]
 
 #[cfg(not(test))]
 extern crate alloc;
@@ -16,11 +17,11 @@ use std::borrow::Cow;
 extern crate pwasm_abi;
 extern crate pwasm_abi_derive;
 
-use pwasm_abi_derive::legacy_dispatch;
+use pwasm_abi_derive::eth_dispatch;
 
 type U256 = [u8; 32];
 
-#[legacy_dispatch(Endpoint)]
+#[eth_dispatch(Endpoint)]
 pub trait TestContract {
 	fn ctor(&mut self);
 

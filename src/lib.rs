@@ -10,7 +10,7 @@ extern crate byteorder;
 #[macro_use]
 extern crate alloc;
 
-pub mod legacy;
+pub mod eth;
 
 mod lib {
 

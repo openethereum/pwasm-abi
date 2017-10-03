@@ -16,45 +16,45 @@ use alloc::vec::Vec;
 use proc_macro::TokenStream;
 
 #[proc_macro_attribute]
-pub fn legacy_dispatch(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn eth_dispatch(args: TokenStream, input: TokenStream) -> TokenStream {
 	let args_str = args.to_string();
 	let endpoint_name = args_str.trim_matches(&['(', ')', '"', ' '][..]);
 
 	let source = input.to_string();
 	let ast = syn::parse_item(&source).expect("Failed to parse derive input");
 
-	let generated = impl_legacy_dispatch(&ast, &endpoint_name);
+	let generated = impl_eth_dispatch(&ast, &endpoint_name);
 
 	generated.parse().expect("Failed to parse generated input")
 }
 
-fn ty_to_param_type(ty: &syn::Ty) -> abi::legacy::ParamType {
+fn ty_to_param_type(ty: &syn::Ty) -> abi::eth::ParamType {
 	match *ty {
 		syn::Ty::Path(None, ref path) => {
 			let last_path = path.segments.last().unwrap();
 			match last_path.ident.to_string().as_ref() {
-				"u32" => abi::legacy::ParamType::U32,
-				"i32" => abi::legacy::ParamType::I32,
-				"u64" => abi::legacy::ParamType::U64,
-				"i64" => abi::legacy::ParamType::I64,
-				"U256" => abi::legacy::ParamType::U256,
-				"H256" => abi::legacy::ParamType::H256,
+				"u32" => abi::eth::ParamType::U32,
+				"i32" => abi::eth::ParamType::I32,
+				"u64" => abi::eth::ParamType::U64,
+				"i64" => abi::eth::ParamType::I64,
+				"U256" => abi::eth::ParamType::U256,
+				"H256" => abi::eth::ParamType::H256,
 				"Vec" => {
 					match last_path.parameters {
 						syn::PathParameters::AngleBracketed(ref param_data) => {
 							let vec_arg = param_data.types.last().unwrap();
 							if let syn::Ty::Path(None, ref nested_path) = *vec_arg {
 								if "u8" == nested_path.segments.last().unwrap().ident.to_string() {
-									return abi::legacy::ParamType::Bytes;
+									return abi::eth::ParamType::Bytes;
 								}
 							}
-							abi::legacy::ParamType::Array(ty_to_param_type(vec_arg).into())
+							abi::eth::ParamType::Array(ty_to_param_type(vec_arg).into())
 						},
 						_ => panic!("Unsupported vec arguments"),
 					}
 				},
-				"String" => abi::legacy::ParamType::String,
-				"bool" => abi::legacy::ParamType::Bool,
+				"String" => abi::eth::ParamType::String,
+				"bool" => abi::eth::ParamType::Bool,
 				ref val @ _ => panic!("Unable to handle param of type {}: not supported by abi", val)
 			}
 		},
@@ -62,7 +62,7 @@ fn ty_to_param_type(ty: &syn::Ty) -> abi::legacy::ParamType {
 	}
 }
 
-fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::legacy::Signature {
+fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::eth::Signature {
 	let mut params = Vec::new();
 
 	for fn_arg in method_sig.decl.inputs.iter() {
@@ -75,15 +75,15 @@ fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::legacy::Signature {
 		}
 	}
 
-	abi::legacy::Signature::new_void(params)
+	abi::eth::Signature::new_void(params)
 }
 
-fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::legacy::NamedSignature> {
+fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::eth::NamedSignature> {
 	let name = item.ident.as_ref().to_string();
 	match item.node {
 		syn::TraitItemKind::Method(ref method_sig, None) => {
 			Some(
-				abi::legacy::NamedSignature::new(
+				abi::eth::NamedSignature::new(
 					name,
 					parse_rust_signature(method_sig),
 				)
@@ -95,29 +95,29 @@ fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::legacy::NamedSi
 	}
 }
 
-fn param_type_to_ident(param_type: &abi::legacy::ParamType) -> quote::Tokens {
-	use abi::legacy::ParamType;
+fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
+	use abi::eth::ParamType;
 	match *param_type {
-		ParamType::U32 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
-		ParamType::I32 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
-		ParamType::U64 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
-		ParamType::I64 => quote! { ::pwasm_abi::legacy::ParamType::U32 },
-		ParamType::Bool => quote! { ::pwasm_abi::legacy::ParamType::Bool },
-		ParamType::U256 => quote! { ::pwasm_abi::legacy::ParamType::U256 },
-		ParamType::H256 => quote! { ::pwasm_abi::legacy::ParamType::H256 },
-		ParamType::Address => quote! { ::pwasm_abi::legacy::ParamType::Address },
-		ParamType::Bytes => quote! { ::pwasm_abi::legacy::ParamType::Bytes },
+		ParamType::U32 => quote! { ::pwasm_abi::eth::ParamType::U32 },
+		ParamType::I32 => quote! { ::pwasm_abi::eth::ParamType::U32 },
+		ParamType::U64 => quote! { ::pwasm_abi::eth::ParamType::U32 },
+		ParamType::I64 => quote! { ::pwasm_abi::eth::ParamType::U32 },
+		ParamType::Bool => quote! { ::pwasm_abi::eth::ParamType::Bool },
+		ParamType::U256 => quote! { ::pwasm_abi::eth::ParamType::U256 },
+		ParamType::H256 => quote! { ::pwasm_abi::eth::ParamType::H256 },
+		ParamType::Address => quote! { ::pwasm_abi::eth::ParamType::Address },
+		ParamType::Bytes => quote! { ::pwasm_abi::eth::ParamType::Bytes },
 		ParamType::Array(ref t) => {
 			let nested = param_type_to_ident(t.as_ref());
 			quote! {
-				::pwasm_abi::legacy::ParamType::Array(::pwasm_abi::legacy::ArrayRef::Static(&#nested))
+				::pwasm_abi::eth::ParamType::Array(::pwasm_abi::eth::ArrayRef::Static(&#nested))
 			}
 		},
-		ParamType::String => quote! { ::pwasm_abi::legacy::ParamType::String },
+		ParamType::String => quote! { ::pwasm_abi::eth::ParamType::String },
 	}
 }
 
-fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens {
+fn impl_eth_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens {
 	let name = &item.ident;
 
 	let trait_items = match item.node {
@@ -125,7 +125,7 @@ fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens 
 		_ => { panic!("Dispatch trait can work with trait declarations only!"); }
 	};
 
-	let signatures: Vec<abi::legacy::NamedSignature> =
+	let signatures: Vec<abi::eth::NamedSignature> =
 		trait_items.iter().filter_map(trait_item_to_signature).collect();
 
 	let ctor_branch = signatures.iter().find(|ns| ns.name() == "ctor").map(|ns| {
@@ -140,7 +140,7 @@ fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens 
 		}
 	});
 
-	let hashed_signatures: Vec<abi::legacy::HashSignature> =
+	let hashed_signatures: Vec<abi::eth::HashSignature> =
 		signatures.clone().into_iter()
 			.map(From::from)
 			.collect();
@@ -159,10 +159,10 @@ fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens 
 			let return_type = param_type_to_ident(result_type);
 			quote! {
 				{
-					const SIGNATURE: &'static [::pwasm_abi::legacy::ParamType] = &[#(#param_types),*];
-					::pwasm_abi::legacy::HashSignature::new(
+					const SIGNATURE: &'static [::pwasm_abi::eth::ParamType] = &[#(#param_types),*];
+					::pwasm_abi::eth::HashSignature::new(
 						#hash_literal,
-						::pwasm_abi::legacy::Signature::new(
+						::pwasm_abi::eth::Signature::new(
 							SIGNATURE,
 							Some(#return_type),
 						)
@@ -171,9 +171,9 @@ fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens 
 			}
 		} else {
 			quote! {
-				::pwasm_abi::legacy::HashSignature {
+				::pwasm_abi::eth::HashSignature {
 					hash: #hash_literal,
-					signature: ::pwasm_abi::legacy::Signature {
+					signature: ::pwasm_abi::eth::Signature {
 						params: Cow::Borrowed(&[#(#param_types),*]),
 						result: None,
 					}
@@ -217,7 +217,7 @@ fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens 
 
 	let dispatch_table = quote! {
 		{
-			const TABLE: &'static ::pwasm_abi::legacy::Table = &::pwasm_abi::legacy::Table {
+			const TABLE: &'static ::pwasm_abi::eth::Table = &::pwasm_abi::eth::Table {
 				inner: Cow::Borrowed(&[#(#table_signatures),*]),
 				fallback: None,
 			};
@@ -232,7 +232,7 @@ fn impl_legacy_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens 
 
 		pub struct #endpoint_ident<T: #name> {
 			inner: T,
-			table: &'static ::pwasm_abi::legacy::Table,
+			table: &'static ::pwasm_abi::eth::Table,
 		}
 
 		impl<T: #name> #endpoint_ident<T> {
