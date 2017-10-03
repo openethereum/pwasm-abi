@@ -380,13 +380,5 @@ mod tests {
 		let decoded = decode(&[ParamType::String], &encoded).unwrap();
 		assert_eq!(decoded, expected);
 	}
-
-	#[test]
-	fn static_refs() {
-		const signature_dispatch: &'static [ParamType] = &[
-			ParamType::Array(ArrayRef::Static(&ParamType::U256)),
-			ParamType::Array(ArrayRef::Static(&ParamType::Address)),
-		];
-	}
 }
 
