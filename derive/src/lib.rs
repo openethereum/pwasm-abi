@@ -23,7 +23,7 @@ pub fn eth_dispatch(args: TokenStream, input: TokenStream) -> TokenStream {
 	let source = input.to_string();
 	let ast = syn::parse_item(&source).expect("Failed to parse derive input");
 
-	let generated = impl_eth_dispatch(&ast, &endpoint_name);
+	let generated = impl_eth_dispatch(ast, &endpoint_name);
 
 	generated.parse().expect("Failed to parse generated input")
 }
@@ -123,7 +123,7 @@ fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
 	}
 }
 
-fn impl_eth_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens {
+fn impl_eth_dispatch(item: syn::Item, endpoint_name: &str) -> quote::Tokens {
 	let name = &item.ident;
 
 	let trait_items = match item.node {
@@ -187,7 +187,11 @@ fn impl_eth_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens {
 
 	let branches = hashed_signatures.into_iter()
 		.zip(signatures.into_iter())
-		.map(|(hs, ns)| {
+		.filter_map(|(hs, ns)| {
+			if ns.name() == "ctor" {
+				return None;
+			}
+
 			let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
 			let ident: syn::Ident = ns.name().into();
 
@@ -196,7 +200,7 @@ fn impl_eth_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens {
 			).take(hs.signature().params().len());
 
 			if let Some(_) = hs.signature().result() {
-				quote! {
+				Some(quote! {
 					#hash_literal => {
 						Some(
 							inner.#ident(
@@ -204,16 +208,16 @@ fn impl_eth_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens {
 							).into()
 						)
 					}
-				}
+				})
 			} else {
-				quote! {
+				Some(quote! {
 					#hash_literal => {
 						inner.#ident(
 							#(#args_line),*
 						);
 						None
 					}
-				}
+				})
 			}
 		}
 	);
