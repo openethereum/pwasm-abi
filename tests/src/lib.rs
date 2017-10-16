@@ -156,6 +156,6 @@ fn boo_dispatch() {
 
 	assert_eq!(&result[28..32], &[0x00, 0x00, 0x00, 0xff]);
 
-	assert!(endpoint.inner.called, "`sam` method was not invoked");
+	assert!(endpoint.inner.called, "`boo` method was not invoked");
 	assert!(!endpoint.inner.called_wrong, "wrong method was invoked");
 }
