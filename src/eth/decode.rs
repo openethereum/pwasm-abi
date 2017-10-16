@@ -32,7 +32,7 @@ struct BytesTaken {
 /// Convers vector of bytes with len equal n * 32, to a vector of slices.
 fn slice_data(data: &[u8]) -> Result<Vec<Hash>, Error> {
 	if data.len() % 32 != 0 {
-		return Err(Error);
+		return Err(Error::InvalidPadding);
 	}
 
 	let times = data.len() / 32;
@@ -47,7 +47,7 @@ fn slice_data(data: &[u8]) -> Result<Vec<Hash>, Error> {
 }
 
 fn peek(slices: &[Hash], position: usize) -> Result<&Hash, Error> {
-	slices.get(position).ok_or(Error)
+	slices.get(position).ok_or(Error::UnexpectedEnd)
 }
 
 fn take_bytes(slices: &[Hash], position: usize, len: usize) -> Result<BytesTaken, Error> {
@@ -184,7 +184,7 @@ fn decode_param(param: &ParamType, slices: &[Hash], offset: usize) -> Result<Dec
 			let taken = try!(take_bytes(slices, len_offset + 1, len));
 
 			let result = DecodeResult {
-				token: ValueType::String(String::from_utf8(taken.bytes).map_err(|_| Error)?),
+				token: ValueType::String(String::from_utf8(taken.bytes).map_err(|_| Error::InvalidUtf8)?),
 				new_offset: offset + 1,
 			};
 

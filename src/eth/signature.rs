@@ -40,7 +40,7 @@ impl Signature {
                 Ok(encode(&[val]))
             },
             (None, &None) => Ok(Vec::new()),
-            _ => Err(Error)
+            _ => Err(Error::ResultCantFit)
         }
     }
 

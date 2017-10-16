@@ -49,6 +49,11 @@ const PAYLOAD_SAMPLE_2: &[u8] = &[
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03,
 ];
 
+const PAYLOAD_SAMPLE_3: &[u8] = &[
+	0x5d, 0xda, 0xb4, 0xd4,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x45,
+];
+
 #[test]
 fn baz_dispatch() {
 	#[derive(Default)]
@@ -117,6 +122,39 @@ fn sam_dispatch() {
 	let result = endpoint.dispatch(PAYLOAD_SAMPLE_2);
 
 	assert_eq!(result, Vec::new());
+
+	assert!(endpoint.inner.called, "`sam` method was not invoked");
+	assert!(!endpoint.inner.called_wrong, "wrong method was invoked");
+}
+
+#[test]
+fn boo_dispatch() {
+	#[derive(Default)]
+	struct TestContractInstance {
+		called: bool,
+		called_wrong: bool,
+	}
+
+	impl TestContract for TestContractInstance {
+		fn ctor(&mut self) {
+		}
+		fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<U256>) {
+			self.called_wrong = true;
+		}
+		fn baz(&mut self, _p1: u32, _p2: bool) {
+			self.called_wrong = true;
+		}
+		fn boo(&mut self, arg: u32) -> u32 {
+			self.called = true;
+			assert_eq!(arg, 69);
+			255
+		}
+	}
+
+	let mut endpoint = Endpoint::new(TestContractInstance::default());
+	let result = endpoint.dispatch(PAYLOAD_SAMPLE_3);
+
+	assert_eq!(&result[28..32], &[0x00, 0x00, 0x00, 0xff]);
 
 	assert!(endpoint.inner.called, "`sam` method was not invoked");
 	assert!(!endpoint.inner.called_wrong, "wrong method was invoked");

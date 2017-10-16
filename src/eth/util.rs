@@ -1,7 +1,15 @@
 use lib::*;
 
 #[derive(Debug)]
-pub struct Error;
+pub enum Error {
+	UnknownSignature,
+	NoLengthForSignature,
+	NoFallback,
+	ResultCantFit,
+	UnexpectedEnd,
+	InvalidPadding,
+	InvalidUtf8,
+}
 
 pub type Hash = [u8; 32];
 
@@ -63,7 +71,7 @@ pub fn pad_i32(value: i32) -> Hash {
 
 pub fn as_u32(slice: &Hash) -> Result<u32, Error> {
 	if !slice[..28].iter().all(|x| *x == 0) {
-		return Err(Error);
+		return Err(Error::InvalidPadding);
 	}
 
 	let result = ((slice[28] as u32) << 24) +
@@ -84,7 +92,7 @@ pub fn as_i32(slice: &Hash) -> Result<i32, Error> {
 	// only negative path here
 
 	if !slice[1..28].iter().all(|x| *x == 0xff) {
-		return Err(Error);
+		return Err(Error::InvalidPadding);
 	}
 
 	let result = ((slice[28] as u32) << 24) +
@@ -97,7 +105,7 @@ pub fn as_i32(slice: &Hash) -> Result<i32, Error> {
 
 pub fn as_u64(slice: &Hash) -> Result<u64, Error> {
 	if !slice[..24].iter().all(|x| *x == 0) {
-		return Err(Error);
+		return Err(Error::InvalidPadding);
 	}
 
 	let result =
@@ -123,7 +131,7 @@ pub fn as_i64(slice: &Hash) -> Result<i64, Error> {
 	// only negative path here
 
 	if !slice[1..28].iter().all(|x| *x == 0xff) {
-		return Err(Error);
+		return Err(Error::InvalidPadding);
 	}
 
 	let result =
@@ -141,7 +149,7 @@ pub fn as_i64(slice: &Hash) -> Result<i64, Error> {
 
 pub fn as_bool(slice: &Hash) -> Result<bool, Error> {
 	if !slice[..31].iter().all(|x| *x == 0) {
-		return Err(Error);
+		return Err(Error::InvalidPadding);
 	}
 
 	Ok(slice[31] == 1)

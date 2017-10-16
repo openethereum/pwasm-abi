@@ -72,10 +72,10 @@ impl Table {
 	pub fn dispatch<D>(&self, payload: &[u8], mut d: D) -> Result<Vec<u8>, Error>
 		where D: FnMut(u32, Vec<ValueType>) -> Option<ValueType>
 	{
-		if payload.len() < 4 { return Err(Error); }
+		if payload.len() < 4 { return Err(Error::NoLengthForSignature); }
 		let method_id = BigEndian::read_u32(&payload[0..4]);
 
-		let hash_signature = self.inner.iter().find(|x| x.hash == method_id).ok_or(Error)?;
+		let hash_signature = self.inner.iter().find(|x| x.hash == method_id).ok_or(Error::UnknownSignature)?;
 
 		let args = hash_signature.signature.decode_invoke(&payload[4..]);
 		let result = d(method_id, args);
@@ -92,7 +92,7 @@ impl Table {
 			d(fallback_signature.decode_invoke(payload));
 			Ok(())
 		} else {
-			Err(Error)
+			Err(Error::NoFallback)
 		}
 	}
 }

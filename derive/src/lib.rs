@@ -75,7 +75,13 @@ fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::eth::Signature {
 		}
 	}
 
-	abi::eth::Signature::new_void(params)
+	abi::eth::Signature::new(
+		params, 
+		match method_sig.decl.output { 
+			syn::FunctionRetTy::Default => None,
+			syn::FunctionRetTy::Ty(ref ty) => Some(ty_to_param_type(ty)),
+		}
+	)
 }
 
 fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::eth::NamedSignature> {
@@ -158,15 +164,12 @@ fn impl_eth_dispatch(item: &syn::Item, endpoint_name: &str) -> quote::Tokens {
 		if let Some(result_type) = hs.signature().result() {
 			let return_type = param_type_to_ident(result_type);
 			quote! {
-				{
-					const SIGNATURE: &'static [::pwasm_abi::eth::ParamType] = &[#(#param_types),*];
-					::pwasm_abi::eth::HashSignature::new(
-						#hash_literal,
-						::pwasm_abi::eth::Signature::new(
-							SIGNATURE,
-							Some(#return_type),
-						)
-					)
+				::pwasm_abi::eth::HashSignature {
+					hash: #hash_literal,
+					signature: ::pwasm_abi::eth::Signature {
+						params: Cow::Borrowed(&[#(#param_types),*]),
+						result: Some(#return_type),
+					}
 				}
 			}
 		} else {
