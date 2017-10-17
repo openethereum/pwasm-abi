@@ -39,6 +39,7 @@ fn ty_to_param_type(ty: &syn::Ty) -> abi::eth::ParamType {
 				"i64" => abi::eth::ParamType::I64,
 				"U256" => abi::eth::ParamType::U256,
 				"H256" => abi::eth::ParamType::H256,
+				"Address" => abi::eth::ParamType::Address,
 				"Vec" => {
 					match last_path.parameters {
 						syn::PathParameters::AngleBracketed(ref param_data) => {
