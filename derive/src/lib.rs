@@ -76,8 +76,8 @@ fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::eth::Signature {
 	}
 
 	abi::eth::Signature::new(
-		params, 
-		match method_sig.decl.output { 
+		params,
+		match method_sig.decl.output {
 			syn::FunctionRetTy::Default => None,
 			syn::FunctionRetTy::Ty(ref ty) => Some(ty_to_param_type(ty)),
 		}
@@ -265,6 +265,7 @@ fn impl_eth_dispatch(item: syn::Item, endpoint_name: &str) -> quote::Tokens {
 			pub fn dispatch_ctor(&mut self, payload: &[u8]) {
 				let inner = &mut self.inner;
 				self.table.fallback_dispatch(payload, |args| {
+					let mut args = args.into_iter();
 					#ctor_branch
 				}).expect("Failed fallback abi dispatch");
 			}

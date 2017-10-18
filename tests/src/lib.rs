@@ -23,7 +23,7 @@ type U256 = [u8; 32];
 
 #[eth_dispatch(Endpoint)]
 pub trait TestContract {
-	fn ctor(&mut self);
+	fn ctor(&mut self, _p: bool);
 
 	fn baz(&mut self, _p1: u32, _p2: bool);
 	fn boo(&mut self, _arg: u32) -> u32;
@@ -63,7 +63,7 @@ fn baz_dispatch() {
 	}
 
 	impl TestContract for TestContractInstance {
-		fn ctor(&mut self) {
+		fn ctor(&mut self, _p1: bool) {
 		}
 		fn baz(&mut self, p1: u32, p2: bool) {
 			assert_eq!(p1, 69);
@@ -97,7 +97,7 @@ fn sam_dispatch() {
 	}
 
 	impl TestContract for TestContractInstance {
-		fn ctor(&mut self) {
+		fn ctor(&mut self, _p1: bool) {
 		}
 		fn sam(&mut self, p1: Vec<u8>, p2: bool, p3: Vec<U256>) {
 			assert_eq!(p1, vec![100, 97, 118, 101]);
@@ -136,7 +136,7 @@ fn boo_dispatch() {
 	}
 
 	impl TestContract for TestContractInstance {
-		fn ctor(&mut self) {
+		fn ctor(&mut self, _p1: bool) {
 		}
 		fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<U256>) {
 			self.called_wrong = true;
