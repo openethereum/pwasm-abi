@@ -33,6 +33,19 @@ impl From<u32> for ValueType {
     }
 }
 
+impl From<U256> for ValueType {
+    fn from(val: U256) -> Self {
+        ValueType::H256(val.into())
+    }
+}
+
+impl From<H256> for ValueType {
+    fn from(val: H256) -> Self {
+        ValueType::H256(val.into())
+    }
+}
+
+
 impl From<ValueType> for u32 {
     fn from(val: ValueType) -> Self {
         match val {
