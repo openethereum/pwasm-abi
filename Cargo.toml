@@ -9,6 +9,9 @@ panic = "abort"
 [dependencies]
 tiny-keccak = "*"
 rustc-hex = { version = "1.0", optional = true }
+bigint = "4"
+parity-hash = "1"
+
 
 [dependencies.byteorder]
 version = "1"

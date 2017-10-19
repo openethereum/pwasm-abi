@@ -1,6 +1,9 @@
 //! Typed value module
 
 use lib::*;
+use bigint::U256;
+use parity_hash::H256;
+use parity_hash::Address;
 
 /// Typed value
 #[derive(Debug, PartialEq)]
@@ -29,6 +32,19 @@ impl From<u32> for ValueType {
         ValueType::U32(val)
     }
 }
+
+impl From<U256> for ValueType {
+    fn from(val: U256) -> Self {
+        ValueType::H256(val.into())
+    }
+}
+
+impl From<H256> for ValueType {
+    fn from(val: H256) -> Self {
+        ValueType::H256(val.into())
+    }
+}
+
 
 impl From<ValueType> for u32 {
     fn from(val: ValueType) -> Self {
@@ -73,5 +89,32 @@ impl From<ValueType> for [u8; 32] {
             ValueType::U256(v) | ValueType::H256(v) => v,
             _ => panic!("invalid abi generated for bool argument"),
         }
-    }    
+    }
+}
+
+impl From<ValueType> for U256 {
+    fn from(val: ValueType) -> U256 {
+        match val {
+            ValueType::U256(v) => v.into(),
+            _ => panic!("invalid abi generated for U256 argument"),
+        }
+    }
+}
+
+impl From<ValueType> for H256 {
+    fn from(val: ValueType) -> H256 {
+        match val {
+            ValueType::H256(v) => v.into(),
+            _ => panic!("invalid abi generated for H256 argument"),
+        }
+    }
+}
+
+impl From<ValueType> for Address {
+    fn from(val: ValueType) -> Address {
+        match val {
+            ValueType::Address(v) => v.into(),
+            _ => panic!("invalid abi generated for Address argument"),
+        }
+    }
 }

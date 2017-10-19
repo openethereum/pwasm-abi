@@ -6,3 +6,5 @@ authors = ["NikVolf <nikvolf@gmail.com>"]
 [dependencies]
 pwasm-abi = { path = ".." }
 pwasm-abi-derive = { path = "../derive" }
+bigint = "4"
+parity-hash = "1"

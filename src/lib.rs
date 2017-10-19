@@ -5,6 +5,8 @@
 
 extern crate tiny_keccak;
 extern crate byteorder;
+extern crate bigint;
+extern crate parity_hash;
 
 #[cfg(not(feature="std"))]
 #[macro_use]
@@ -32,7 +34,7 @@ mod lib {
 	pub use self::core::fmt::{self, Debug, Display};
 	pub use self::core::marker::{self, PhantomData};
 	pub use self::core::option::{self, Option};
-	pub use self::core::result::{self, Result};	
+	pub use self::core::result::{self, Result};
 
 	#[cfg(feature = "std")]
 	pub use std::borrow::{Cow, ToOwned};
