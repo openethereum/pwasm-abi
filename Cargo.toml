@@ -8,6 +8,7 @@ panic = "abort"
 
 [dependencies]
 tiny-keccak = "*"
+pwasm-std = { git = "https://github.com/nikvolf/pwasm-std" }
 rustc-hex = { version = "1.0", optional = true }
 
 [dependencies.byteorder]

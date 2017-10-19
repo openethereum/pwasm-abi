@@ -1,6 +1,9 @@
 //! Typed value module
 
 use lib::*;
+use pwasm_std::bigint::U256;
+use pwasm_std::hash::H256;
+use pwasm_std::hash::Address;
 
 /// Typed value
 #[derive(Debug, PartialEq)]
@@ -73,5 +76,32 @@ impl From<ValueType> for [u8; 32] {
             ValueType::U256(v) | ValueType::H256(v) => v,
             _ => panic!("invalid abi generated for bool argument"),
         }
-    }    
+    }
+}
+
+impl From<ValueType> for U256 {
+    fn from(val: ValueType) -> U256 {
+        match val {
+            ValueType::U256(v) => v.into(),
+            _ => panic!("invalid abi generated for U256 argument"),
+        }
+    }
+}
+
+impl From<ValueType> for H256 {
+    fn from(val: ValueType) -> H256 {
+        match val {
+            ValueType::H256(v) => v.into(),
+            _ => panic!("invalid abi generated for H256 argument"),
+        }
+    }
+}
+
+impl From<ValueType> for Address {
+    fn from(val: ValueType) -> Address {
+        match val {
+            ValueType::Address(v) => v.into(),
+            _ => panic!("invalid abi generated for Address argument"),
+        }
+    }
 }
