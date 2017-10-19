@@ -5,7 +5,8 @@
 
 extern crate tiny_keccak;
 extern crate byteorder;
-extern crate pwasm_std;
+extern crate bigint;
+extern crate parity_hash;
 
 #[cfg(not(feature="std"))]
 #[macro_use]

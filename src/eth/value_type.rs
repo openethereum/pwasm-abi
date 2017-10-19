@@ -1,9 +1,9 @@
 //! Typed value module
 
 use lib::*;
-use pwasm_std::bigint::U256;
-use pwasm_std::hash::H256;
-use pwasm_std::hash::Address;
+use bigint::U256;
+use parity_hash::H256;
+use parity_hash::Address;
 
 /// Typed value
 #[derive(Debug, PartialEq)]
