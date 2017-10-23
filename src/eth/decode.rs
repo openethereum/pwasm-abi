@@ -222,7 +222,7 @@ mod tests {
 
 	use self::hex::FromHex;
 	use super::decode;
-    use super::super::{ValueType, ParamType, ArrayRef};
+    use super::super::{ValueType, ParamType};
 
 	#[test]
 	fn decode_address() {
