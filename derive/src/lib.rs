@@ -11,19 +11,28 @@ extern crate quote;
 #[cfg(not(feature="std"))]
 extern crate alloc;
 
-use alloc::vec::Vec;
+mod items;
 
+use alloc::vec::Vec;
 use proc_macro::TokenStream;
+
+use items::Item;
 
 #[proc_macro_attribute]
 pub fn eth_dispatch(args: TokenStream, input: TokenStream) -> TokenStream {
 	let args_str = args.to_string();
-	let endpoint_name = args_str.trim_matches(&['(', ')', '"', ' '][..]);
+	let mut args: Vec<String> = args_str
+		.split(',')
+		.map(|w| w.trim_matches(&['(', ')', '"', ' '][..]).to_string())
+		.collect();
+
+	let client_arg = args.pop().expect("Should be 2 elements in attribute");
+	let endpoint_arg = args.pop().expect("Should be 2 elements in attribute");
 
 	let source = input.to_string();
 	let ast = syn::parse_item(&source).expect("Failed to parse derive input");
 
-	let generated = impl_eth_dispatch(ast, &endpoint_name);
+	let generated = impl_eth_dispatch(ast, endpoint_arg, client_arg);
 
 	generated.parse().expect("Failed to parse generated input")
 }
@@ -85,10 +94,10 @@ fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::eth::Signature {
 	)
 }
 
-fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::eth::NamedSignature> {
-	let name = item.ident.as_ref().to_string();
-	match item.node {
-		syn::TraitItemKind::Method(ref method_sig, None) => {
+fn item_to_signature(item: &Item) -> Option<abi::eth::NamedSignature> {
+	match *item {
+		Item::Signature(ref ident, ref method_sig) => {
+			let name = ident.as_ref().to_string();
 			Some(
 				abi::eth::NamedSignature::new(
 					name,
@@ -96,9 +105,7 @@ fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::eth::NamedSigna
 				)
 			)
 		},
-		_ => {
-			None
-		}
+		_ => None,
 	}
 }
 
@@ -124,16 +131,16 @@ fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
 	}
 }
 
-fn impl_eth_dispatch(item: syn::Item, endpoint_name: &str) -> quote::Tokens {
-	let name = &item.ident;
-
-	let trait_items = match item.node {
-		syn::ItemKind::Trait(_, _, _, ref items) => items,
-		_ => { panic!("Dispatch trait can work with trait declarations only!"); }
-	};
+fn impl_eth_dispatch(
+	item: syn::Item, 
+	endpoint_name: String,
+	client_name: String,
+) -> quote::Tokens {
+	let intf = items::Interface::from_item(item);
+	let name = intf.name();
 
 	let signatures: Vec<abi::eth::NamedSignature> =
-		trait_items.iter().filter_map(trait_item_to_signature).collect();
+		intf.items().iter().filter_map(item_to_signature).collect();
 
 	let ctor_branch = signatures.iter().find(|ns| ns.name() == "ctor").map(|ns| {
 		let args_line = std::iter::repeat(
@@ -236,7 +243,7 @@ fn impl_eth_dispatch(item: syn::Item, endpoint_name: &str) -> quote::Tokens {
 	let endpoint_ident: syn::Ident = endpoint_name.into();
 
 	quote! {
-		#item
+		#intf
 
 		pub struct #endpoint_ident<T: #name> {
 			inner: T,

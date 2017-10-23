@@ -1,7 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), feature(alloc))]
 #![feature(proc_macro)]
-#![cfg(test)]
+//#![cfg(test)]
 
 #[cfg(not(test))]
 extern crate alloc;
@@ -22,7 +22,7 @@ use pwasm_abi_derive::eth_dispatch;
 
 use bigint::U256;
 
-#[eth_dispatch(Endpoint)]
+#[eth_dispatch(Endpoint, Client)]
 pub trait TestContract {
 	fn ctor(&mut self, _p: bool);
 
