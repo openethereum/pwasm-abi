@@ -75,7 +75,7 @@ impl Table {
 		if payload.len() < 4 { return Err(Error::NoLengthForSignature); }
 		let method_id = BigEndian::read_u32(&payload[0..4]);
 
-		let hash_signature = self.inner.iter().find(|x| x.hash == method_id).ok_or(Error::UnknownSignature)?;
+		let hash_signature = self.hash_signature(method_id)?;
 
 		let args = hash_signature.signature.decode_invoke(&payload[4..]);
 		let result = d(method_id, args);
@@ -94,6 +94,29 @@ impl Table {
 		} else {
 			Err(Error::NoFallback)
 		}
+	}
+
+	pub fn hash_signature(&self, method_id: u32) -> Result<&HashSignature, Error> {
+		self.inner.iter().find(|x| x.hash == method_id).ok_or(Error::UnknownSignature)
+	}
+
+	pub fn call<D>(&self, hash: u32, args: &[ValueType], mut d: D)
+		-> Result<Option<ValueType>, Error>
+		where D: FnMut(Vec<u8>) -> Option<[u8; 32]>
+	{
+		let hash_signature = self.hash_signature(hash)?;
+		let args_payload = hash_signature.signature.encode_invoke(args);
+		let mut payload = Vec::with_capacity(args_payload.len() + 4);
+		let mut encoded_signature = [0u8; 4];
+		BigEndian::write_u32(&mut encoded_signature, hash);
+		payload.extend_from_slice(&encoded_signature);
+		payload.extend(args_payload);
+
+		let result = d(payload);
+		Ok(match result {
+			Some(ref result_slice) => hash_signature.signature.decode_result(&result_slice[..])?,
+			None => None,
+		})
 	}
 }
 

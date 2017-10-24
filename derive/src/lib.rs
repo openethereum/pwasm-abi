@@ -131,6 +131,37 @@ fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
 	}
 }
 
+fn produce_signature<T: quote::ToTokens>(
+	ident: &syn::Ident,
+	method_sig: &syn::MethodSig,
+	t: T,
+) -> quote::Tokens
+{
+	let args = method_sig.decl.inputs.iter().filter_map(|arg| {
+		match *arg {
+			syn::FnArg::Captured(ref pat, ref ty) => Some(quote!{#pat: #ty}),
+			_ => None,
+		}
+	});
+	match method_sig.decl.output {
+		syn::FunctionRetTy::Ty(ref output) => {
+			quote!{
+				fn #ident(&mut self, #(#args),*) -> #output {
+					#t
+				}
+			}
+		},
+		syn::FunctionRetTy::Default => {
+			quote!{
+				fn #ident(&mut self, #(#args),*) {
+					#t
+				}
+			}
+		}
+	}
+
+}
+
 fn impl_eth_dispatch(
 	item: syn::Item,
 	endpoint_name: String,
@@ -195,6 +226,57 @@ fn impl_eth_dispatch(
 		}
 	});
 
+
+	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
+		match *item {
+			Item::Signature(ref ident, ref method_sig)  => {
+				let signature_index = signatures.iter().position(|s| s.name() == ident.as_ref()).expect("signature with this name known to exist");
+				let hash = *&hashed_signatures[signature_index].hash();
+				let hash_literal = syn::Lit::Int(hash as u64, syn::IntTy::U32);
+
+				let args = method_sig.decl.inputs.iter().filter_map(|arg| {
+					match *arg {
+						syn::FnArg::Captured(ref pat, _) => Some(pat),
+						_ => None,
+					}
+				});
+
+				let body_appendix = match method_sig.decl.output {
+					syn::FunctionRetTy::Default => quote!{;},
+					syn::FunctionRetTy::Ty(_) => quote!{.expect("abi should return value").into()},
+				};
+
+				Some(produce_signature(
+					ident,
+					method_sig,
+					quote!{
+						let values: &[::pwasm_abi::eth::ValueType] = &[
+							#(#args.into()),*
+						];
+						self.table
+							.call(#hash_literal, values, |payload| {
+								call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut[])
+									.expect("call failed");
+								None
+							})
+							.expect("abi dispatch failed")
+							#body_appendix
+					}
+				))
+			},
+			Item::Event(ref ident, ref method_sig)  => {
+				Some(produce_signature(
+					ident,
+					method_sig,
+					quote!{
+						panic!("cannot use event in client interface");
+					}
+				))
+			},
+			_ => None,
+		}
+	}).collect();
+
 	let branches = hashed_signatures.into_iter()
 		.zip(signatures.into_iter())
 		.filter_map(|(hs, ns)| {
@@ -251,6 +333,7 @@ fn impl_eth_dispatch(
 
 		pub struct #client_ident {
 			address: Address,
+			value: Option<U256>,
 			table: &'static ::pwasm_abi::eth::Table,
 		}
 
@@ -264,8 +347,18 @@ fn impl_eth_dispatch(
 				#client_ident {
 					address: address,
 					table: #dispatch_table,
+					value: None,
 				}
 			}
+
+			pub fn value(mut self, val: U256) -> Self {
+				self.value = Some(val);
+				self
+			}
+		}
+
+		impl #name_ident for #client_ident {
+			#(#calls)*
 		}
 
 		impl<T: #name_ident> #endpoint_ident<T> {

@@ -14,6 +14,11 @@ use alloc::borrow::Cow;
 #[cfg(test)]
 use std::borrow::Cow;
 
+#[cfg(not(test))]
+use core::cell::RefCell;
+#[cfg(test)]
+use std::cell::RefCell;
+
 extern crate pwasm_abi;
 extern crate parity_hash;
 extern crate pwasm_abi_derive;
@@ -56,6 +61,13 @@ const PAYLOAD_SAMPLE_3: &[u8] = &[
 	0x5d, 0xda, 0xb4, 0xd4,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x45,
 ];
+
+thread_local!(pub static LAST_CALL: RefCell<Vec<u8>> = RefCell::new(Vec::new()));
+
+fn call(_address: &Address, _value: U256, input: &[u8], _result: &mut [u8]) -> Result<(), ()> {
+	LAST_CALL.with(|v| { *v.borrow_mut() = input.to_vec(); });
+	Ok(())
+}
 
 #[test]
 fn baz_dispatch() {
@@ -161,4 +173,14 @@ fn boo_dispatch() {
 
 	assert!(endpoint.inner.called, "`boo` method was not invoked");
 	assert!(!endpoint.inner.called_wrong, "wrong method was invoked");
+}
+
+#[test]
+fn baz_call() {
+	let mut client = Client::new(Address::zero());
+	client.baz(69, true);
+	LAST_CALL.with(|v| {
+		let val: &[u8] = &v.borrow()[..];
+		assert_eq!(val, PAYLOAD_SAMPLE_1);
+	});
 }
