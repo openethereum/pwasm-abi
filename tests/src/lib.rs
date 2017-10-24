@@ -1,7 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), feature(alloc))]
 #![feature(proc_macro)]
-//#![cfg(test)]
+#![cfg(test)]
 
 #[cfg(not(test))]
 extern crate alloc;

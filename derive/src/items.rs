@@ -45,6 +45,14 @@ impl Interface {
 	pub fn name(&self) -> &str {
 		&self.name
 	}
+
+	pub fn endpoint_name(&self) -> &str {
+		&self.endpoint_name
+	}
+
+	pub fn client_name(&self) -> &str {
+		&self.client_name
+	}
 }
 
 impl Item {
@@ -106,14 +114,14 @@ impl quote::ToTokens for Item {
 impl quote::ToTokens for Interface {
 	fn to_tokens(&self, tokens: &mut quote::Tokens) {
 		let trait_ident: syn::Ident = self.name.clone().into();
-		
+
 		let items = &self.items;
 		tokens.append(
-			quote! {
+			quote! (
 				pub trait #trait_ident {
-					#(#items)
+					#(#items)*
 				}
-			}
+			)
 		);
 	}
 }

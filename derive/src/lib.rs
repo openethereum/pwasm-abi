@@ -132,12 +132,14 @@ fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
 }
 
 fn impl_eth_dispatch(
-	item: syn::Item, 
+	item: syn::Item,
 	endpoint_name: String,
 	client_name: String,
 ) -> quote::Tokens {
-	let intf = items::Interface::from_item(item);
-	let name = intf.name();
+
+	let intf = items::Interface::from_item(item)
+		.client(client_name)
+		.endpoint(endpoint_name);
 
 	let signatures: Vec<abi::eth::NamedSignature> =
 		intf.items().iter().filter_map(item_to_signature).collect();
@@ -240,17 +242,19 @@ fn impl_eth_dispatch(
 		}
 	};
 
-	let endpoint_ident: syn::Ident = endpoint_name.into();
+	let endpoint_ident: syn::Ident = intf.endpoint_name().clone().into();
+	let _client_ident: syn::Ident = intf.client_name().clone().into();
+	let name_ident: syn::Ident = intf.name().clone().into();
 
 	quote! {
 		#intf
 
-		pub struct #endpoint_ident<T: #name> {
+		pub struct #endpoint_ident<T: #name_ident> {
 			inner: T,
 			table: &'static ::pwasm_abi::eth::Table,
 		}
 
-		impl<T: #name> #endpoint_ident<T> {
+		impl<T: #name_ident> #endpoint_ident<T> {
 			pub fn new(inner: T) -> Self {
 				Endpoint {
 					inner: inner,
