@@ -18,11 +18,11 @@ extern crate pwasm_abi;
 extern crate pwasm_abi_derive;
 extern crate bigint;
 
-use pwasm_abi_derive::eth_dispatch;
+use pwasm_abi_derive::eth_abi;
 
 use bigint::U256;
 
-#[eth_dispatch(Endpoint, Client)]
+#[eth_abi(Endpoint, Client)]
 pub trait TestContract {
 	fn ctor(&mut self, _p: bool);
 

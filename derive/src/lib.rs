@@ -19,7 +19,7 @@ use proc_macro::TokenStream;
 use items::Item;
 
 #[proc_macro_attribute]
-pub fn eth_dispatch(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	let args_str = args.to_string();
 	let mut args: Vec<String> = args_str
 		.split(',')
