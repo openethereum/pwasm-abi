@@ -5,5 +5,5 @@ Parity WASM Abi (Legacy and new)
 
 ```toml
 [dependencies]
-pwasm-abi = { git = "https://github.com/nikvolf/pwasm-abi" }
+pwasm-abi = { git = "https://github.com/paritytech/pwasm-abi" }
 ```
