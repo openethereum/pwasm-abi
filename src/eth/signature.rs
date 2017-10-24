@@ -30,6 +30,21 @@ impl Signature {
         }
     }
 
+    pub fn encode_invoke(&self, args: &[ValueType]) -> Vec<u8> {
+        encode(args)
+    }
+
+    pub fn decode_result(&self, payload: &[u8]) -> Result<Option<ValueType>, Error> {
+        let mut result = decode(self.params.as_ref(), payload)?;
+        match (&self.result, result.pop()) {
+            (&Some(_), Some(val)) => {
+                Ok(Some(val))
+            },
+            (&None, None) => Ok(None),
+            _ => Err(Error::ResultCantFit),
+        }
+    }
+
     pub fn decode_invoke(&self, payload: &[u8]) -> Vec<ValueType> {
         decode(&self.params.as_ref(), payload).expect("Failed signature paring is a valid panic")
     }

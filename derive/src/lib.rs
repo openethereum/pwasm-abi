@@ -243,20 +243,34 @@ fn impl_eth_dispatch(
 	};
 
 	let endpoint_ident: syn::Ident = intf.endpoint_name().clone().into();
-	let _client_ident: syn::Ident = intf.client_name().clone().into();
+	let client_ident: syn::Ident = intf.client_name().clone().into();
 	let name_ident: syn::Ident = intf.name().clone().into();
 
 	quote! {
 		#intf
+
+		pub struct #client_ident {
+			address: Address,
+			table: &'static ::pwasm_abi::eth::Table,
+		}
 
 		pub struct #endpoint_ident<T: #name_ident> {
 			inner: T,
 			table: &'static ::pwasm_abi::eth::Table,
 		}
 
+		impl #client_ident {
+			pub fn new(address: Address) -> Self {
+				#client_ident {
+					address: address,
+					table: #dispatch_table,
+				}
+			}
+		}
+
 		impl<T: #name_ident> #endpoint_ident<T> {
 			pub fn new(inner: T) -> Self {
-				Endpoint {
+				#endpoint_ident {
 					inner: inner,
 					table: #dispatch_table,
 				}

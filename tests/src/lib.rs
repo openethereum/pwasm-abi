@@ -15,12 +15,14 @@ use alloc::borrow::Cow;
 use std::borrow::Cow;
 
 extern crate pwasm_abi;
+extern crate parity_hash;
 extern crate pwasm_abi_derive;
 extern crate bigint;
 
 use pwasm_abi_derive::eth_abi;
 
 use bigint::U256;
+use parity_hash::Address;
 
 #[eth_abi(Endpoint, Client)]
 pub trait TestContract {
