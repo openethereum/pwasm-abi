@@ -11,19 +11,28 @@ extern crate quote;
 #[cfg(not(feature="std"))]
 extern crate alloc;
 
-use alloc::vec::Vec;
+mod items;
 
+use alloc::vec::Vec;
 use proc_macro::TokenStream;
 
+use items::Item;
+
 #[proc_macro_attribute]
-pub fn eth_dispatch(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	let args_str = args.to_string();
-	let endpoint_name = args_str.trim_matches(&['(', ')', '"', ' '][..]);
+	let mut args: Vec<String> = args_str
+		.split(',')
+		.map(|w| w.trim_matches(&['(', ')', '"', ' '][..]).to_string())
+		.collect();
+
+	let client_arg = args.pop().expect("Should be 2 elements in attribute");
+	let endpoint_arg = args.pop().expect("Should be 2 elements in attribute");
 
 	let source = input.to_string();
 	let ast = syn::parse_item(&source).expect("Failed to parse derive input");
 
-	let generated = impl_eth_dispatch(ast, &endpoint_name);
+	let generated = impl_eth_dispatch(ast, endpoint_arg, client_arg);
 
 	generated.parse().expect("Failed to parse generated input")
 }
@@ -85,10 +94,10 @@ fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::eth::Signature {
 	)
 }
 
-fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::eth::NamedSignature> {
-	let name = item.ident.as_ref().to_string();
-	match item.node {
-		syn::TraitItemKind::Method(ref method_sig, None) => {
+fn item_to_signature(item: &Item) -> Option<abi::eth::NamedSignature> {
+	match *item {
+		Item::Signature(ref ident, ref method_sig) => {
+			let name = ident.as_ref().to_string();
 			Some(
 				abi::eth::NamedSignature::new(
 					name,
@@ -96,9 +105,7 @@ fn trait_item_to_signature(item: &syn::TraitItem) -> Option<abi::eth::NamedSigna
 				)
 			)
 		},
-		_ => {
-			None
-		}
+		_ => None,
 	}
 }
 
@@ -124,16 +131,49 @@ fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
 	}
 }
 
-fn impl_eth_dispatch(item: syn::Item, endpoint_name: &str) -> quote::Tokens {
-	let name = &item.ident;
+fn produce_signature<T: quote::ToTokens>(
+	ident: &syn::Ident,
+	method_sig: &syn::MethodSig,
+	t: T,
+) -> quote::Tokens
+{
+	let args = method_sig.decl.inputs.iter().filter_map(|arg| {
+		match *arg {
+			syn::FnArg::Captured(ref pat, ref ty) => Some(quote!{#pat: #ty}),
+			_ => None,
+		}
+	});
+	match method_sig.decl.output {
+		syn::FunctionRetTy::Ty(ref output) => {
+			quote!{
+				fn #ident(&mut self, #(#args),*) -> #output {
+					#t
+				}
+			}
+		},
+		syn::FunctionRetTy::Default => {
+			quote!{
+				fn #ident(&mut self, #(#args),*) {
+					#t
+				}
+			}
+		}
+	}
 
-	let trait_items = match item.node {
-		syn::ItemKind::Trait(_, _, _, ref items) => items,
-		_ => { panic!("Dispatch trait can work with trait declarations only!"); }
-	};
+}
+
+fn impl_eth_dispatch(
+	item: syn::Item,
+	endpoint_name: String,
+	client_name: String,
+) -> quote::Tokens {
+
+	let intf = items::Interface::from_item(item)
+		.client(client_name)
+		.endpoint(endpoint_name);
 
 	let signatures: Vec<abi::eth::NamedSignature> =
-		trait_items.iter().filter_map(trait_item_to_signature).collect();
+		intf.items().iter().filter_map(item_to_signature).collect();
 
 	let ctor_branch = signatures.iter().find(|ns| ns.name() == "ctor").map(|ns| {
 		let args_line = std::iter::repeat(
@@ -186,6 +226,57 @@ fn impl_eth_dispatch(item: syn::Item, endpoint_name: &str) -> quote::Tokens {
 		}
 	});
 
+
+	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
+		match *item {
+			Item::Signature(ref ident, ref method_sig)  => {
+				let signature_index = signatures.iter().position(|s| s.name() == ident.as_ref()).expect("signature with this name known to exist");
+				let hash = *&hashed_signatures[signature_index].hash();
+				let hash_literal = syn::Lit::Int(hash as u64, syn::IntTy::U32);
+
+				let args = method_sig.decl.inputs.iter().filter_map(|arg| {
+					match *arg {
+						syn::FnArg::Captured(ref pat, _) => Some(pat),
+						_ => None,
+					}
+				});
+
+				let body_appendix = match method_sig.decl.output {
+					syn::FunctionRetTy::Default => quote!{;},
+					syn::FunctionRetTy::Ty(_) => quote!{.expect("abi should return value").into()},
+				};
+
+				Some(produce_signature(
+					ident,
+					method_sig,
+					quote!{
+						let values: &[::pwasm_abi::eth::ValueType] = &[
+							#(#args.into()),*
+						];
+						self.table
+							.call(#hash_literal, values, |payload| {
+								call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut[])
+									.expect("call failed");
+								None
+							})
+							.expect("abi dispatch failed")
+							#body_appendix
+					}
+				))
+			},
+			Item::Event(ref ident, ref method_sig)  => {
+				Some(produce_signature(
+					ident,
+					method_sig,
+					quote!{
+						panic!("cannot use event in client interface");
+					}
+				))
+			},
+			_ => None,
+		}
+	}).collect();
+
 	let branches = hashed_signatures.into_iter()
 		.zip(signatures.into_iter())
 		.filter_map(|(hs, ns)| {
@@ -233,19 +324,46 @@ fn impl_eth_dispatch(item: syn::Item, endpoint_name: &str) -> quote::Tokens {
 		}
 	};
 
-	let endpoint_ident: syn::Ident = endpoint_name.into();
+	let endpoint_ident: syn::Ident = intf.endpoint_name().clone().into();
+	let client_ident: syn::Ident = intf.client_name().clone().into();
+	let name_ident: syn::Ident = intf.name().clone().into();
 
 	quote! {
-		#item
+		#intf
 
-		pub struct #endpoint_ident<T: #name> {
+		pub struct #client_ident {
+			address: Address,
+			value: Option<U256>,
+			table: &'static ::pwasm_abi::eth::Table,
+		}
+
+		pub struct #endpoint_ident<T: #name_ident> {
 			inner: T,
 			table: &'static ::pwasm_abi::eth::Table,
 		}
 
-		impl<T: #name> #endpoint_ident<T> {
+		impl #client_ident {
+			pub fn new(address: Address) -> Self {
+				#client_ident {
+					address: address,
+					table: #dispatch_table,
+					value: None,
+				}
+			}
+
+			pub fn value(mut self, val: U256) -> Self {
+				self.value = Some(val);
+				self
+			}
+		}
+
+		impl #name_ident for #client_ident {
+			#(#calls)*
+		}
+
+		impl<T: #name_ident> #endpoint_ident<T> {
 			pub fn new(inner: T) -> Self {
-				Endpoint {
+				#endpoint_ident {
 					inner: inner,
 					table: #dispatch_table,
 				}
