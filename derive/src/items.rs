@@ -80,9 +80,9 @@ impl Item {
 
 impl quote::ToTokens for Item {
 	fn to_tokens(&self, tokens: &mut quote::Tokens) {
-		let item = match *self {
+		match *self {
 			Item::Event(ref name, ref method_sig) => {
-				syn::TraitItem {
+				tokens.append_all(&[syn::TraitItem {
 					ident: name.clone(),
 					attrs: Vec::new(),
 					node: syn::TraitItemKind::Method(
@@ -90,24 +90,22 @@ impl quote::ToTokens for Item {
 						// TODO: Should be actual code - event breakdown
 						Some(syn::Block { stmts: Vec::new() })
 					),
-				}
+				}]);
 			},
 			Item::Signature(ref name, ref method_sig) => {
-				syn::TraitItem {
+				tokens.append_all(&[syn::TraitItem {
 					ident: name.clone(),
 					attrs: Vec::new(),
 					node: syn::TraitItemKind::Method(
 						method_sig.clone(),
 						None,
 					),
-				}
+				}]);
 			},
 			Item::Other(ref item) => {
-				item.clone()
+				tokens.append_all(&[item]);
 			}
-		};
-
-		tokens.append_all(&[item]);
+		}
 	}
 }
 
