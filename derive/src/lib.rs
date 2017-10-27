@@ -12,6 +12,7 @@ extern crate quote;
 extern crate alloc;
 
 mod items;
+mod utils;
 
 use alloc::vec::Vec;
 use proc_macro::TokenStream;
@@ -131,36 +132,7 @@ fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
 	}
 }
 
-fn produce_signature<T: quote::ToTokens>(
-	ident: &syn::Ident,
-	method_sig: &syn::MethodSig,
-	t: T,
-) -> quote::Tokens
-{
-	let args = method_sig.decl.inputs.iter().filter_map(|arg| {
-		match *arg {
-			syn::FnArg::Captured(ref pat, ref ty) => Some(quote!{#pat: #ty}),
-			_ => None,
-		}
-	});
-	match method_sig.decl.output {
-		syn::FunctionRetTy::Ty(ref output) => {
-			quote!{
-				fn #ident(&mut self, #(#args),*) -> #output {
-					#t
-				}
-			}
-		},
-		syn::FunctionRetTy::Default => {
-			quote!{
-				fn #ident(&mut self, #(#args),*) {
-					#t
-				}
-			}
-		}
-	}
 
-}
 
 fn impl_eth_dispatch(
 	item: syn::Item,
@@ -246,7 +218,7 @@ fn impl_eth_dispatch(
 					syn::FunctionRetTy::Ty(_) => quote!{.expect("abi should return value").into()},
 				};
 
-				Some(produce_signature(
+				Some(utils::produce_signature(
 					ident,
 					method_sig,
 					quote!{
@@ -265,7 +237,7 @@ fn impl_eth_dispatch(
 				))
 			},
 			Item::Event(ref ident, ref method_sig)  => {
-				Some(produce_signature(
+				Some(utils::produce_signature(
 					ident,
 					method_sig,
 					quote!{

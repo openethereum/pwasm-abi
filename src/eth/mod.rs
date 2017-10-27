@@ -7,6 +7,7 @@ mod encode;
 mod decode;
 mod util;
 mod dispatch;
+mod log;
 
 pub use self::param_type::{ParamType, ArrayRef};
 pub use self::value_type::ValueType;

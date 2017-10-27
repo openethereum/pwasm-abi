@@ -36,6 +36,9 @@ pub trait TestContract {
 	fn baz(&mut self, _p1: u32, _p2: bool);
 	fn boo(&mut self, _arg: u32) -> u32;
 	fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<U256>);
+
+	#[event]
+	fn baz_fired(&mut self, indexed_p1: u32, p2: u32);
 }
 
 const PAYLOAD_SAMPLE_1: &[u8] = &[
@@ -62,8 +65,10 @@ const PAYLOAD_SAMPLE_3: &[u8] = &[
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x45,
 ];
 
+#[cfg(test)]
 thread_local!(pub static LAST_CALL: RefCell<Vec<u8>> = RefCell::new(Vec::new()));
 
+#[cfg(test)]
 fn call(_address: &Address, _value: U256, input: &[u8], _result: &mut [u8]) -> Result<(), ()> {
 	LAST_CALL.with(|v| { *v.borrow_mut() = input.to_vec(); });
 	Ok(())

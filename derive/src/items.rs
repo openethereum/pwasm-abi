@@ -1,4 +1,4 @@
-use {quote, syn};
+use {quote, syn, utils};
 
 pub struct Interface {
 	name: String,
@@ -78,19 +78,46 @@ impl Item {
 	}
 }
 
+pub struct Event {
+	name: syn::Ident,
+	indexed: Vec<(syn::Pat, syn::Ty)>,
+	data: Vec<(syn::Pat, syn::Ty)>,
+}
+
 impl quote::ToTokens for Item {
 	fn to_tokens(&self, tokens: &mut quote::Tokens) {
 		match *self {
 			Item::Event(ref name, ref method_sig) => {
-				tokens.append_all(&[syn::TraitItem {
-					ident: name.clone(),
-					attrs: Vec::new(),
-					node: syn::TraitItemKind::Method(
-						method_sig.clone(),
-						// TODO: Should be actual code - event breakdown
-						Some(syn::Block { stmts: Vec::new() })
-					),
-				}]);
+
+				let event = Event {
+					name: name.clone(),
+					indexed: {
+						method_sig.decl.inputs.iter().filter_map(|a| {
+							match *a {
+								syn::FnArg::Captured(ref pat, ref ty) => {
+									let pat_str = quote!{ pat }.to_string();
+									if pat_str.starts_with("indexed_") {
+										Some((pat.clone(), ty.clone()))
+									} else {
+										None
+									}
+								},
+								_ => None,
+							}
+						}).collect()
+					},
+					data: Vec::new(),
+				};
+
+				tokens.append_all(&[
+					utils::produce_signature(
+						name,
+						method_sig,
+						quote! {
+							panic!()
+						}
+					)
+				]);
 			},
 			Item::Signature(ref name, ref method_sig) => {
 				tokens.append_all(&[syn::TraitItem {

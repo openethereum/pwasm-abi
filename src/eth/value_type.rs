@@ -45,7 +45,6 @@ impl From<H256> for ValueType {
     }
 }
 
-
 impl From<ValueType> for u32 {
     fn from(val: ValueType) -> Self {
         match val {
