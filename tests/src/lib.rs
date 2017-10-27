@@ -27,7 +27,7 @@ extern crate bigint;
 use pwasm_abi_derive::eth_abi;
 
 use bigint::U256;
-use parity_hash::Address;
+use parity_hash::{H256, Address};
 
 #[eth_abi(Endpoint, Client)]
 pub trait TestContract {
@@ -72,6 +72,10 @@ thread_local!(pub static LAST_CALL: RefCell<Vec<u8>> = RefCell::new(Vec::new()))
 fn call(_address: &Address, _value: U256, input: &[u8], _result: &mut [u8]) -> Result<(), ()> {
 	LAST_CALL.with(|v| { *v.borrow_mut() = input.to_vec(); });
 	Ok(())
+}
+
+#[cfg(test)]
+fn log(_topics: &[H256], _data: &[u8]) {
 }
 
 #[test]

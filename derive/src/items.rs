@@ -135,6 +135,8 @@ impl quote::ToTokens for Item {
 									#(#data_pats.into()),*
 								];
 								let payload = ::pwasm_abi::eth::encode_values(values);
+
+								log(topics, &payload);
 							}
 						}
 					)
