@@ -2,7 +2,7 @@ use byteorder::{BigEndian, ByteOrder};
 use parity_hash::H256;
 use bigint::U256;
 
-trait AsLog {
+pub trait AsLog {
     fn as_log(&self) -> H256;
 }
 

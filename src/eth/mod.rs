@@ -14,3 +14,5 @@ pub use self::value_type::ValueType;
 pub use self::signature::Signature;
 pub use self::util::Error;
 pub use self::dispatch::{HashSignature, NamedSignature, Table};
+pub use self::log::AsLog;
+pub use self::encode::encode as encode_values;
