@@ -1,0 +1,7 @@
+language:
+  - rust
+
+script:
+  - cargo build --release --verbose
+  - cargo test --verbose
+  - cargo test --verbose --manifest-path=tests/Cargo.toml
