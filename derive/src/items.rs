@@ -1,4 +1,5 @@
-use {quote, syn};
+use {quote, syn, utils};
+use abi::eth::NamedSignature;
 
 pub struct Interface {
 	name: String,
@@ -7,9 +8,17 @@ pub struct Interface {
 	items: Vec<Item>,
 }
 
+pub struct Event {
+	pub name: syn::Ident,
+	pub method_sig: syn::MethodSig,
+	indexed: Vec<(syn::Pat, syn::Ty)>,
+	data: Vec<(syn::Pat, syn::Ty)>,
+	signature: NamedSignature,
+}
+
 pub enum Item {
 	Signature(syn::Ident, syn::MethodSig),
-	Event(syn::Ident, syn::MethodSig),
+	Event(Event),
 	Other(syn::TraitItem),
 }
 
@@ -66,8 +75,24 @@ impl Item {
 					syn::MetaItem::Word(ref ident) => ident.as_ref() == "event" ,
 					_ => false
 				}) {
-					Item::Event(ident, method_sig)
+					let (indexed, non_indexed) = utils::iter_signature(&method_sig)
+						.partition(|&(ref pat, _)| quote! { #pat }.to_string().starts_with("indexed_"));
+
+					let named_signature =  NamedSignature::new(
+						ident.to_string(),
+						utils::parse_rust_signature(&method_sig)
+					);
+					let event = Event {
+						name: ident,
+						indexed: indexed,
+						data: non_indexed,
+						signature: named_signature,
+						method_sig: method_sig,
+					};
+
+					Item::Event(event)
 				} else {
+
 					Item::Signature(ident, method_sig)
 				}
 			},
@@ -81,16 +106,41 @@ impl Item {
 impl quote::ToTokens for Item {
 	fn to_tokens(&self, tokens: &mut quote::Tokens) {
 		match *self {
-			Item::Event(ref name, ref method_sig) => {
-				tokens.append_all(&[syn::TraitItem {
-					ident: name.clone(),
-					attrs: Vec::new(),
-					node: syn::TraitItemKind::Method(
-						method_sig.clone(),
-						// TODO: Should be actual code - event breakdown
-						Some(syn::Block { stmts: Vec::new() })
-					),
-				}]);
+			Item::Event(ref event) => {
+				let method_sig = &event.method_sig;
+				let name = &event.name;
+				tokens.append_all(&[
+					utils::produce_signature(
+						name,
+						method_sig,
+						{
+							let hash = event.signature.hash();
+
+							let hash_bytes = hash.as_ref().iter().map(|b| {
+								syn::Lit::Int(*b as u64, syn::IntTy::U8)
+							});
+
+							let indexed_pats = event.indexed.iter()
+								.map(|&(ref pat, _)| pat);
+
+							let data_pats = event.data.iter()
+								.map(|&(ref pat, _)| pat);
+
+							quote! {
+								let topics = &[
+									[#(#hash_bytes),*].into(),
+									#(::pwasm_abi::eth::AsLog::as_log(&#indexed_pats)),*
+								];
+								let values: &[::pwasm_abi::eth::ValueType] = &[
+									#(#data_pats.into()),*
+								];
+								let payload = ::pwasm_abi::eth::encode_values(values);
+
+								log(topics, &payload);
+							}
+						}
+					)
+				]);
 			},
 			Item::Signature(ref name, ref method_sig) => {
 				tokens.append_all(&[syn::TraitItem {
