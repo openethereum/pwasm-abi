@@ -24,6 +24,8 @@ extern crate parity_hash;
 extern crate pwasm_abi_derive;
 extern crate bigint;
 
+mod erc20;
+
 use pwasm_abi_derive::eth_abi;
 
 use bigint::U256;
