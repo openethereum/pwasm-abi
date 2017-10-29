@@ -4,6 +4,7 @@ mod contract {
 	use parity_hash::Address;
 	use bigint::U256;
 	use call;
+	use std::collections::HashMap;
 
 	#[cfg(not(test))]
 	use alloc::borrow::Cow;
@@ -18,4 +19,39 @@ mod contract {
 		fn transfer(&mut self, _to: Address, _amount: U256) -> bool;
 		fn totalSupply(&mut self) -> U256;
 	}
+
+	#[derive(Default)]
+	pub struct Instance {
+		total_supply: U256,
+		balances: HashMap<Address, U256>,
+	}
+
+	impl TokenContract for Instance {
+		fn ctor(&mut self, total_supply: U256) {
+			self.total_supply = total_supply;
+		}
+
+		fn balanceOf(&mut self, owner: Address) -> U256 {
+			self.balances.get(&owner).cloned().unwrap_or(U256::zero())
+		}
+
+		fn transfer(&mut self, to: Address, amount: U256) -> bool {
+			false
+		}
+
+		fn totalSupply(&mut self) -> U256 {
+			self.total_supply
+		}
+	}
+}
+
+const SAMPLE1: &'static [u8] = &[
+	0x70, 0xa0, 0x82, 0x31,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+];
+
+#[test]
+fn call1() {
+	let mut endpoint = contract::Endpoint::new(contract::Instance::default());
+	endpoint.dispatch(SAMPLE1);
 }
