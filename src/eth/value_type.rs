@@ -118,6 +118,12 @@ impl From<ValueType> for Address {
     }
 }
 
+impl From<Address> for ValueType {
+    fn from(addr: Address) -> ValueType {
+        ValueType::Address(addr.into())
+    }
+}
+
 impl<T: Into<ValueType>> From<Vec<T>> for ValueType {
     fn from(val: Vec<T>) -> ValueType {
         ValueType::Array(val.into_iter().map(Into::into).collect())
