@@ -56,3 +56,10 @@ fn call1() {
 	let mut endpoint = contract::Endpoint::new(contract::Instance::default());
 	endpoint.dispatch(SAMPLE1);
 }
+
+#[test]
+#[should_panic]
+fn ctor_empty() {
+	let mut endpoint = contract::Endpoint::new(contract::Instance::default());
+	endpoint.dispatch_ctor(&vec![]);
+}
