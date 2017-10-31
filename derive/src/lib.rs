@@ -90,17 +90,40 @@ fn impl_eth_dispatch(
 	let signatures: Vec<abi::eth::NamedSignature> =
 		intf.items().iter().filter_map(item_to_signature).collect();
 
-	let ctor_branch = signatures.iter().find(|ns| ns.name() == "ctor").map(|ns| {
-		let args_line = std::iter::repeat(
-			quote! { args.next().expect("Failed to fetch next argument").into() }
-		).take(ns.signature().params().len());
+	let (ctor_branch, ctor_signature) = {
 
-		quote! {
-			inner.ctor(
-				#(#args_line),*
-			);
-		}
-	});
+		let ctor_signature = signatures.iter().find(|ns| ns.name() == "ctor");
+
+		let ctor_branch = ctor_signature.map(|ns| {
+			let args_line = std::iter::repeat(
+				quote! { args.next().expect("Failed to fetch next argument").into() }
+			).take(ns.signature().params().len());
+
+			quote! {
+				inner.ctor(
+					#(#args_line),*
+				);
+			}
+		});
+
+		let ctor_dispatch_effective = ctor_signature.map(|ns|
+			{
+				let param_types = ns.signature().params().iter().map(|p| {
+					let ident = param_type_to_ident(&p);
+					quote! { #ident }
+				});
+
+				quote! {
+					Some(::pwasm_abi::eth::Signature {
+						params: Cow::Borrowed(&[#(#param_types),*]),
+						result: None,
+					})
+				}
+			}
+		).unwrap_or(quote! { None });
+
+		(ctor_branch, ctor_dispatch_effective)
+	};
 
 	let hashed_signatures: Vec<abi::eth::HashSignature> =
 		signatures.clone().into_iter()
@@ -140,7 +163,6 @@ fn impl_eth_dispatch(
 			}
 		}
 	});
-
 
 	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
 		match *item {
@@ -230,11 +252,12 @@ fn impl_eth_dispatch(
 		}
 	);
 
+
 	let dispatch_table = quote! {
 		{
 			const TABLE: &'static ::pwasm_abi::eth::Table = &::pwasm_abi::eth::Table {
 				inner: Cow::Borrowed(&[#(#table_signatures),*]),
-				fallback: None,
+				fallback: #ctor_signature,
 			};
 			TABLE
 		}
@@ -303,6 +326,10 @@ fn impl_eth_dispatch(
 					let mut args = args.into_iter();
 					#ctor_branch
 				}).expect("Failed fallback abi dispatch");
+			}
+
+			pub fn instance(&self) -> &T {
+				&self.inner
 			}
 		}
 	}
