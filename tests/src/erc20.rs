@@ -77,3 +77,10 @@ fn ctor() {
 fn call() {
 	contract::Client::new(Address::zero()).value(U256::from(100));
 }
+
+#[test]
+#[should_panic]
+fn ctor_empty() {
+	let mut endpoint = contract::Endpoint::new(contract::Instance::default());
+	endpoint.dispatch_ctor(&vec![]);
+}
