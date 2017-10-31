@@ -1,5 +1,9 @@
+use bigint::U256;
+use parity_hash::Address;
 
 mod contract {
+	#![allow(non_snake_case)]
+
 	use pwasm_abi_derive::eth_abi;
 	use parity_hash::Address;
 	use bigint::U256;
@@ -11,7 +15,6 @@ mod contract {
 	#[cfg(test)]
 	use std::borrow::Cow;
 
-	#[allow(non_snake_case)]
 	#[eth_abi(Endpoint, Client)]
 	pub trait TokenContract {
 		fn ctor(&mut self, total_supply: U256);
@@ -22,7 +25,7 @@ mod contract {
 
 	#[derive(Default)]
 	pub struct Instance {
-		total_supply: U256,
+		pub total_supply: U256,
 		balances: HashMap<Address, U256>,
 	}
 
@@ -35,7 +38,7 @@ mod contract {
 			self.balances.get(&owner).cloned().unwrap_or(U256::zero())
 		}
 
-		fn transfer(&mut self, to: Address, amount: U256) -> bool {
+		fn transfer(&mut self, _to: Address, _amount: U256) -> bool {
 			false
 		}
 
@@ -51,8 +54,26 @@ const SAMPLE1: &'static [u8] = &[
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
+const SAMPLE2: &'static [u8] = &[
+	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+];
+
+
 #[test]
 fn call1() {
 	let mut endpoint = contract::Endpoint::new(contract::Instance::default());
 	endpoint.dispatch(SAMPLE1);
+}
+
+#[test]
+fn ctor() {
+	let mut endpoint = contract::Endpoint::new(contract::Instance::default());
+	endpoint.dispatch_ctor(SAMPLE2);
+
+	assert_eq!(endpoint.instance().total_supply, U256::from(1) << 248);
+}
+
+#[test]
+fn call() {
+	contract::Client::new(Address::zero()).value(U256::from(100));
 }
