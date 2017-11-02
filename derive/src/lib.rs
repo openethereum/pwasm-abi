@@ -96,7 +96,12 @@ fn impl_eth_dispatch(
 
 		let ctor_branch = ctor_signature.map(|ns| {
 			let args_line = std::iter::repeat(
-				quote! { args.next().expect("Failed to fetch next argument").into() }
+				quote! {
+					match args.next() {
+						Some(a) => a.into(),
+						None => panic!("Failed to fetch next argument"),
+					}
+				}
 			).take(ns.signature().params().len());
 
 			quote! {
@@ -180,7 +185,12 @@ fn impl_eth_dispatch(
 
 				let body_appendix = match method_sig.decl.output {
 					syn::FunctionRetTy::Default => quote!{;},
-					syn::FunctionRetTy::Ty(_) => quote!{.expect("abi should return value").into()},
+					syn::FunctionRetTy::Ty(_) => quote!{
+						match _call_result {
+							Some(val) => val,
+							None => panic!("abi should return value")
+						}.into()
+					},
 				};
 
 				Some(utils::produce_signature(
@@ -190,14 +200,19 @@ fn impl_eth_dispatch(
 						let values: &[::pwasm_abi::eth::ValueType] = &[
 							#(#args.into()),*
 						];
-						self.table
+						let _call_result = match self.table
 							.call(#hash_literal, values, |payload| {
-								call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut[])
-									.expect("call failed");
+								match call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut[]) {
+									Ok(_) => {},
+									Err(_) => panic!("call failed"),
+								};
 								None
 							})
-							.expect("abi dispatch failed")
-							#body_appendix
+						{
+								Ok(res) => res,
+								Err(_) => panic!("abi dispatch failed"),
+						};
+						#body_appendix
 					}
 				))
 			},
@@ -226,7 +241,12 @@ fn impl_eth_dispatch(
 			let ident: syn::Ident = ns.name().into();
 
 			let args_line = std::iter::repeat(
-				quote! { args.next().expect("Failed to fetch next argument").into() }
+				quote! {
+					match args.next() {
+						None => panic!("Failed to fetch next argument"),
+						Some(a) => a.into(),
+					}
+				}
 			).take(hs.signature().params().len());
 
 			if let Some(_) = hs.signature().result() {
@@ -310,22 +330,28 @@ fn impl_eth_dispatch(
 
 			pub fn dispatch(&mut self, payload: &[u8]) -> Vec<u8> {
 				let inner = &mut self.inner;
-				self.table.dispatch(payload, |method_id, args| {
+				match self.table.dispatch(payload, |method_id, args| {
 					let mut args = args.into_iter();
 					match method_id {
 				 		#(#branches),*,
 						_ => panic!("Invalid method signature"),
 					}
-				}).expect("Failed abi dispatch")
+				}) {
+					Ok(payload) => payload,
+					Err(_) => panic!("Failed abi dispatch"),
+				}
 			}
 
 			#[allow(unused_variables)]
 			pub fn dispatch_ctor(&mut self, payload: &[u8]) {
 				let inner = &mut self.inner;
-				self.table.fallback_dispatch(payload, |args| {
+				match self.table.fallback_dispatch(payload, |args| {
 					let mut args = args.into_iter();
 					#ctor_branch
-				}).expect("Failed fallback abi dispatch");
+				}) {
+					Ok(_) => {},
+					Err(_) => panic!("Failed fallback abi dispatch"),
+				}
 			}
 
 			pub fn instance(&self) -> &T {
