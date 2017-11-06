@@ -75,8 +75,6 @@ fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
 	}
 }
 
-
-
 fn impl_eth_dispatch(
 	item: syn::Item,
 	endpoint_name: String,
@@ -95,12 +93,23 @@ fn impl_eth_dispatch(
 		let ctor_signature = signatures.iter().find(|ns| ns.name() == "ctor");
 
 		let ctor_branch = ctor_signature.map(|ns| {
+			let param_types = ns.signature().params().iter().map(|p| {
+				let ident = param_type_to_ident(&p);
+				quote! {
+					#ident
+				}
+			});
+
 			let args_line = std::iter::repeat(
 				quote! { args.next().expect("Failed to fetch next argument").into() }
 			).take(ns.signature().params().len());
 
 			quote! {
-				inner.ctor(
+				let mut args = ::pwasm_abi::eth::decode_values(&[#(#param_types),*], payload)
+					.expect("abi decode failed")
+					.into_iter();
+
+				self.inner.ctor(
 					#(#args_line),*
 				);
 			}
@@ -229,29 +238,46 @@ fn impl_eth_dispatch(
 				quote! { args.next().expect("Failed to fetch next argument").into() }
 			).take(hs.signature().params().len());
 
+			let param_types = hs.signature().params().iter().map(|p| {
+				let ident = param_type_to_ident(&p);
+				quote! {
+					#ident
+				}
+			});
+
 			if let Some(_) = hs.signature().result() {
 				Some(quote! {
 					#hash_literal => {
-						Some(
+
+						let mut args = ::pwasm_abi::eth::decode_values(&[#(#param_types),*], method_payload)
+							.expect("abi decode failed")
+							.into_iter();
+
+						let result: &[::pwasm_abi::eth::ValueType] = &[
 							inner.#ident(
 								#(#args_line),*
 							).into()
-						)
+						];
+
+						::pwasm_abi::eth::encode_values(result)
 					}
 				})
 			} else {
 				Some(quote! {
 					#hash_literal => {
+						let mut args = ::pwasm_abi::eth::decode_values(&[#(#param_types),*], method_payload)
+							.expect("abi decode failed")
+							.into_iter();
+
 						inner.#ident(
 							#(#args_line),*
 						);
-						None
+						Vec::new()
 					}
 				})
 			}
 		}
 	);
-
 
 	let dispatch_table = quote! {
 		{
@@ -278,7 +304,6 @@ fn impl_eth_dispatch(
 
 		pub struct #endpoint_ident<T: #name_ident> {
 			inner: T,
-			table: &'static ::pwasm_abi::eth::Table,
 		}
 
 		impl #client_ident {
@@ -304,28 +329,30 @@ fn impl_eth_dispatch(
 			pub fn new(inner: T) -> Self {
 				#endpoint_ident {
 					inner: inner,
-					table: #dispatch_table,
 				}
 			}
 
 			pub fn dispatch(&mut self, payload: &[u8]) -> Vec<u8> {
 				let inner = &mut self.inner;
-				self.table.dispatch(payload, |method_id, args| {
-					let mut args = args.into_iter();
-					match method_id {
-				 		#(#branches),*,
-						_ => panic!("Invalid method signature"),
-					}
-				}).expect("Failed abi dispatch")
+				if payload.len() < 4 {
+					panic!("Invalid abi invoke");
+				}
+				let method_id = ((payload[0] as u32) << 24)
+					+ ((payload[1] as u32) << 16)
+					+ ((payload[2] as u32) << 8)
+					+ (payload[3] as u32);
+
+				let method_payload = &payload[4..];
+
+				match method_id {
+					#(#branches),*,
+					_ => panic!("Invalid method signature"),
+				}
 			}
 
 			#[allow(unused_variables)]
 			pub fn dispatch_ctor(&mut self, payload: &[u8]) {
-				let inner = &mut self.inner;
-				self.table.fallback_dispatch(payload, |args| {
-					let mut args = args.into_iter();
-					#ctor_branch
-				}).expect("Failed fallback abi dispatch");
+				#ctor_branch
 			}
 
 			pub fn instance(&self) -> &T {
