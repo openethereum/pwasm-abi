@@ -36,7 +36,7 @@ pub fn pad_u64(value: u64) -> Hash {
 	padded[31] = value as u8;
 	padded
 }
-
+	
 /// Converts i64 to right aligned array of 32 bytes.
 pub fn pad_i64(value: i64) -> Hash {
 	if value >= 0 {

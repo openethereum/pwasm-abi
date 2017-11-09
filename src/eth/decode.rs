@@ -219,8 +219,8 @@ fn decode_param(param: &ParamType, slices: &[Hash], offset: usize) -> Result<Dec
 #[cfg(test)]
 mod tests {
 	extern crate rustc_hex as hex;
-
 	use self::hex::FromHex;
+
 	use super::decode;
     use super::super::{ValueType, ParamType};
 
@@ -268,7 +268,6 @@ mod tests {
 		let decoded = decode(&[ParamType::Array(ParamType::Address.into())], &encoded).unwrap();
 		assert_eq!(decoded, expected);
 	}
-
 
 	#[test]
 	fn decode_dynamic_array_of_dynamic_arrays() {
