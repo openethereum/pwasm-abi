@@ -1,5 +1,5 @@
 use byteorder::{BigEndian, ByteOrder};
-use parity_hash::H256;
+use parity_hash::{H256, Address};
 use bigint::U256;
 
 pub trait AsLog {
@@ -58,5 +58,11 @@ impl AsLog for U256 {
 impl AsLog for H256 {
     fn as_log(&self) -> H256 {
         self.clone()
+    }
+}
+
+impl AsLog for Address {
+    fn as_log(&self) -> H256 {
+        self.into()
     }
 }
