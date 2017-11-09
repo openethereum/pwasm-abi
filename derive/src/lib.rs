@@ -308,7 +308,13 @@ fn impl_eth_dispatch(
 				}
 			}
 
-			pub fn dispatch(&mut self, payload: &[u8]) -> Vec<u8> {
+			pub fn instance(&self) -> &T {
+				&self.inner
+			}
+		}
+
+		impl<T: #name_ident> ::pwasm_abi::eth::EndpointInterface for #endpoint_ident<T> {
+			fn dispatch(&mut self, payload: &[u8]) -> Vec<u8> {
 				let inner = &mut self.inner;
 				self.table.dispatch(payload, |method_id, args| {
 					let mut args = args.into_iter();
@@ -320,16 +326,12 @@ fn impl_eth_dispatch(
 			}
 
 			#[allow(unused_variables)]
-			pub fn dispatch_ctor(&mut self, payload: &[u8]) {
+			fn dispatch_ctor(&mut self, payload: &[u8]) {
 				let inner = &mut self.inner;
 				self.table.fallback_dispatch(payload, |args| {
 					let mut args = args.into_iter();
 					#ctor_branch
 				}).expect("Failed fallback abi dispatch");
-			}
-
-			pub fn instance(&self) -> &T {
-				&self.inner
 			}
 		}
 	}
