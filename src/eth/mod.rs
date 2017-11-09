@@ -16,3 +16,10 @@ pub use self::util::Error;
 pub use self::dispatch::{HashSignature, NamedSignature, Table};
 pub use self::log::AsLog;
 pub use self::encode::encode as encode_values;
+
+use lib::*;
+
+pub trait EndpointInterface {
+	fn dispatch(&mut self, payload: &[u8]) -> Vec<u8>;
+	fn dispatch_ctor(&mut self, payload: &[u8]);
+}

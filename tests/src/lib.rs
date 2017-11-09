@@ -27,6 +27,7 @@ extern crate bigint;
 mod erc20;
 
 use pwasm_abi_derive::eth_abi;
+use pwasm_abi::eth::EndpointInterface;
 
 use bigint::U256;
 use parity_hash::{H256, Address};
