@@ -353,7 +353,7 @@ fn impl_eth_dispatch(
 			#[allow(unused_variables)]
 			pub fn dispatch_ctor(&mut self, payload: &[u8]) {
 				#ctor_branch
-			}
+			}	
 
 			pub fn instance(&self) -> &T {
 				&self.inner
