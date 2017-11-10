@@ -36,7 +36,7 @@ impl ParamType {
 			ParamType::U64 => s.push_str("uint64"),
 			ParamType::Address => s.push_str("address"),
 			ParamType::U256 => s.push_str("uint256"),
-			ParamType::H256 => s.push_str("uint256"),
+			ParamType::H256 => s.push_str("int256"),
 			ParamType::Bytes => s.push_str("bytes"),
 			ParamType::Bool => s.push_str("bool"),
 			ParamType::String => s.push_str("string"),

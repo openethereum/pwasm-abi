@@ -192,6 +192,21 @@ fn match_signature_2() {
 }
 
 #[test]
+fn match_signature_3() {
+
+	use super::ParamType;
+
+	let named = NamedSignature {
+		name: Cow::Borrowed("derp"),
+		signature: Signature::new_void(vec![ParamType::H256]),
+	};
+
+	let hashed: HashSignature = named.into();
+
+	assert_eq!(hashed.hash, 0xe2d0cf97);
+}
+
+#[test]
 fn table() {
 
 	use super::ParamType;
