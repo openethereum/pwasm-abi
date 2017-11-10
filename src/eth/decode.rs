@@ -140,7 +140,7 @@ fn decode_param(param: &ParamType, slices: &[Hash], offset: usize) -> Result<Dec
 			let slice = peek(slices, offset)?;
 
 			let result = DecodeResult {
-				token: ValueType::U256(slice.clone()),
+				token: ValueType::H256(slice.clone()),
 				new_offset: offset + 1,
 			};
 
@@ -246,10 +246,19 @@ mod tests {
 	}
 
 	#[test]
-	fn decode_uint() {
+	fn decode_int256() {
 		let encoded = "1111111111111111111111111111111111111111111111111111111111111111".from_hex().unwrap();
-		let uint = ValueType::U256([0x11u8; 32]);
-		let expected = vec![uint];
+		let int256 = ValueType::H256([0x11u8; 32]);
+		let expected = vec![int256];
+		let decoded = decode(&[ParamType::H256], &encoded).unwrap();
+		assert_eq!(decoded, expected);
+	}
+
+	#[test]
+	fn decode_uint256() {
+		let encoded = "1111111111111111111111111111111111111111111111111111111111111111".from_hex().unwrap();
+		let uint256 = ValueType::U256([0x11u8; 32]);
+		let expected = vec![uint256];
 		let decoded = decode(&[ParamType::U256], &encoded).unwrap();
 		assert_eq!(decoded, expected);
 	}
