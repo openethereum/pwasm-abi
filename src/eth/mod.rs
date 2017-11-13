@@ -18,4 +18,4 @@ pub use self::dispatch::{HashSignature, NamedSignature, Table};
 pub use self::log::AsLog;
 pub use self::encode::encode as encode_values;
 pub use self::decode::decode as decode_values;
-pub use self::stream::{Stream, Sink, Encodable, Decodable};
+pub use self::stream::{Stream, Sink, AbiType};

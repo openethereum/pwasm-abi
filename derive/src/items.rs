@@ -11,13 +11,22 @@ pub struct Interface {
 pub struct Event {
 	pub name: syn::Ident,
 	pub method_sig: syn::MethodSig,
-	indexed: Vec<(syn::Pat, syn::Ty)>,
-	data: Vec<(syn::Pat, syn::Ty)>,
-	signature: NamedSignature,
+	pub indexed: Vec<(syn::Pat, syn::Ty)>,
+	pub data: Vec<(syn::Pat, syn::Ty)>,
+	pub signature: NamedSignature,
+}
+
+pub struct Signature {
+	pub name: syn::Ident,
+	pub canonical: String,
+	pub method_sig: syn::MethodSig,
+	pub hash: u32,
+	pub arguments: Vec<(syn::Pat, syn::Ty)>,
+	pub return_type: Option<syn::Ty>,
 }
 
 pub enum Item {
-	Signature(syn::Ident, syn::MethodSig),
+	Signature(Signature),
 	Event(Event),
 	Other(syn::TraitItem),
 }
@@ -92,8 +101,24 @@ impl Item {
 
 					Item::Event(event)
 				} else {
+					let arguments: Vec<(syn::Pat, syn::Ty)> = utils::iter_signature(&method_sig).collect();
+					let canonical = utils::canonical(&ident, &method_sig);
+					let return_type: Option<syn::Ty> = match method_sig.decl.output {
+						syn::FunctionRetTy::Default => None,
+						syn::FunctionRetTy::Ty(ref ty) => Some(ty.clone()),
+					};
+					let hash = utils::hash(&canonical);
 
-					Item::Signature(ident, method_sig)
+					let signature = Signature {
+						name: ident,
+						arguments: arguments,
+						method_sig: method_sig,
+						canonical: canonical,
+						hash: hash,
+						return_type: return_type,
+					};
+
+					Item::Signature(signature)
 				}
 			},
 			_ => {
@@ -142,12 +167,12 @@ impl quote::ToTokens for Item {
 					)
 				]);
 			},
-			Item::Signature(ref name, ref method_sig) => {
+			Item::Signature(ref signature) => {
 				tokens.append_all(&[syn::TraitItem {
-					ident: name.clone(),
+					ident: signature.name.clone(),
 					attrs: Vec::new(),
 					node: syn::TraitItemKind::Method(
-						method_sig.clone(),
+						signature.method_sig.clone(),
 						None,
 					),
 				}]);

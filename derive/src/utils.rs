@@ -1,4 +1,7 @@
 use {syn, quote, abi};
+use tiny_keccak::Keccak;
+use parity_hash::H256;
+use byteorder::{BigEndian, ByteOrder};
 
 pub struct SignatureIterator<'a> {
 	method_sig: &'a syn::MethodSig,
@@ -56,6 +59,64 @@ pub fn produce_signature<T: quote::ToTokens>(
 			}
 		}
 	}
+}
+
+pub fn push_canonical(target: &mut String, ty: &syn::Ty) {
+	match *ty {
+		syn::Ty::Path(None, ref path) => {
+			let last_path = path.segments.last().unwrap();
+			match last_path.ident.to_string().as_ref() {
+				"u32" => target.push_str("uint32"),
+				"i32" => target.push_str("int32"),
+				"u64" => target.push_str("uint64"),
+				"i64" => target.push_str("int64"),
+				"U256" => target.push_str("uint256"),
+				"H256" => target.push_str("uint256"),
+				"Address" => target.push_str("address"),
+				"Vec" => {
+					match last_path.parameters {
+						syn::PathParameters::AngleBracketed(ref param_data) => {
+							let vec_arg = param_data.types.last().unwrap();
+							if let syn::Ty::Path(None, ref nested_path) = *vec_arg {
+								if "u8" == nested_path.segments.last().unwrap().ident.to_string() {
+									target.push_str("bytes");
+									return;
+								}
+							}
+							push_canonical(target, vec_arg);
+							target.push_str("[]")
+						},
+						_ => panic!("Unsupported vec arguments"),
+					}
+				},
+				"String" => target.push_str("string"),
+				"bool" => target.push_str("bool"),
+				ref val @ _ => panic!("Unable to handle param of type {}: not supported by abi", val)
+			}
+		},
+		ref val @ _ => panic!("Unable to handle param of type {:?}: not supported by abi", val),
+	};
+}
+
+pub fn canonical(name: &syn::Ident, method_sig: &syn::MethodSig) -> String {
+	let mut s = String::new();
+	s.push('(');
+	s.push_str(&name.to_string());
+	let total_len = method_sig.decl.inputs.len();
+	for (i, (_, ty)) in iter_signature(method_sig).enumerate() {
+		push_canonical(&mut s, &ty);
+		if i != total_len - 1 { s.push(','); }
+	}
+	s
+}
+
+pub fn hash(s: &str) -> u32 {
+	let mut keccak = Keccak::new_keccak256();
+	let mut res = H256::zero();
+	keccak.update(s.as_bytes());
+	keccak.finalize(res.as_mut());
+
+	BigEndian::read_u32(&res.as_ref()[0..4])
 }
 
 pub fn ty_to_param_type(ty: &syn::Ty) -> abi::eth::ParamType {

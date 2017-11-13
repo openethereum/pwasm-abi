@@ -7,6 +7,9 @@ extern crate pwasm_abi as abi;
 extern crate syn;
 #[macro_use]
 extern crate quote;
+extern crate tiny_keccak;
+extern crate byteorder;
+extern crate parity_hash;
 
 #[cfg(not(feature="std"))]
 extern crate alloc;
@@ -40,12 +43,12 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 
 fn item_to_signature(item: &Item) -> Option<abi::eth::NamedSignature> {
 	match *item {
-		Item::Signature(ref ident, ref method_sig) => {
-			let name = ident.as_ref().to_string();
+		Item::Signature(ref signature) => {
+			let name = signature.name.as_ref().to_string();
 			Some(
 				abi::eth::NamedSignature::new(
 					name,
-					utils::parse_rust_signature(method_sig),
+					utils::parse_rust_signature(&signature.method_sig),
 				)
 			)
 		},
@@ -175,26 +178,26 @@ fn impl_eth_dispatch(
 
 	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
 		match *item {
-			Item::Signature(ref ident, ref method_sig)  => {
-				let signature_index = signatures.iter().position(|s| s.name() == ident.as_ref()).expect("signature with this name known to exist");
+			Item::Signature(ref signature)  => {
+				let signature_index = signatures.iter().position(|s| s.name() == signature.name.as_ref()).expect("signature with this name known to exist");
 				let hash = *&hashed_signatures[signature_index].hash();
 				let hash_literal = syn::Lit::Int(hash as u64, syn::IntTy::U32);
 
-				let args = method_sig.decl.inputs.iter().filter_map(|arg| {
+				let args = signature.method_sig.decl.inputs.iter().filter_map(|arg| {
 					match *arg {
 						syn::FnArg::Captured(ref pat, _) => Some(pat),
 						_ => None,
 					}
 				});
 
-				let body_appendix = match method_sig.decl.output {
+				let body_appendix = match signature.method_sig.decl.output {
 					syn::FunctionRetTy::Default => quote!{;},
 					syn::FunctionRetTy::Ty(_) => quote!{.expect("abi should return value").into()},
 				};
 
 				Some(utils::produce_signature(
-					ident,
-					method_sig,
+					&signature.name,
+					&signature.method_sig,
 					quote!{
 						let values: &[::pwasm_abi::eth::ValueType] = &[
 							#(#args.into()),*
@@ -353,7 +356,7 @@ fn impl_eth_dispatch(
 			#[allow(unused_variables)]
 			pub fn dispatch_ctor(&mut self, payload: &[u8]) {
 				#ctor_branch
-			}	
+			}
 
 			pub fn instance(&self) -> &T {
 				&self.inner

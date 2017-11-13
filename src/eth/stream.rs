@@ -10,17 +10,22 @@ pub enum Error {
 	Other,
 }
 
-pub trait Decodable : Sized {
+/// Abi type trait
+pub trait AbiType : Sized {
+	/// Insantiate type from data stream
 	fn decode(stream: &mut Stream) -> Result<Self, Error>;
-	fn is_fixed() -> bool;
-}
 
-pub trait Encodable : Sized {
+	/// Push type to data sink
 	fn encode(self, sink: &mut Sink);
+
+	/// Return canonical form of type in signature
+	fn canonical(target: &mut String);
+
+	/// Return whether type has fixed length or not
 	fn is_fixed() -> bool;
 }
 
-impl Decodable for u32 {
+impl AbiType for u32 {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
 		stream.position += 32;
 		if stream.position > stream.payload.len() {
@@ -42,17 +47,15 @@ impl Decodable for u32 {
 	}
 
 	fn is_fixed() -> bool { true }
-}
 
-impl Encodable for u32 {
 	fn encode(self, sink: &mut Sink) {
 		sink.preamble.extend_from_slice(&util::pad_u32(self)[..]);
 	}
 
-	fn is_fixed() -> bool { true }
+	fn canonical(target: &mut String) { target.push_str("uint32") }
 }
 
-impl Decodable for Vec<u8> {
+impl AbiType for Vec<u8> {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
 		let len = u32::decode(stream)? as usize;
 
@@ -63,9 +66,7 @@ impl Decodable for Vec<u8> {
 	}
 
 	fn is_fixed() -> bool { false }
-}
 
-impl Encodable for Vec<u8> {
 	fn encode(self, sink: &mut Sink) {
 		let mut val = self;
 		let len = val.len();
@@ -76,10 +77,10 @@ impl Encodable for Vec<u8> {
 		sink.preamble.extend_from_slice(&val[..]);
 	}
 
-	fn is_fixed() -> bool { false }
+	fn canonical(target: &mut String) { target.push_str("bytes"); }
 }
 
-impl Decodable for bool {
+impl AbiType for bool {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
 		let decoded = u32::decode(stream)?;
 		match decoded {
@@ -90,17 +91,17 @@ impl Decodable for bool {
 	}
 
 	fn is_fixed() -> bool { true }
-}
 
-impl Encodable for bool {
 	fn encode(self, sink: &mut Sink) {
 		sink.preamble.extend_from_slice(&util::pad_u32(match self { true => 1, false => 0})[..]);
 	}
 
-	fn is_fixed() -> bool { true }
+	fn canonical(target: &mut String) {
+		target.push_str("bool")
+	}
 }
 
-impl Decodable for U256 {
+impl AbiType for U256 {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
 		stream.position += 32;
 		if stream.position > stream.payload.len() {
@@ -112,10 +113,20 @@ impl Decodable for U256 {
 		)
 	}
 
+	fn encode(self, sink: &mut Sink) {
+		let tail = sink.preamble.len();
+		sink.preamble.resize(tail + 32, 0);
+		self.to_big_endian(&mut sink.preamble[tail..tail+32]);
+	}
+
 	fn is_fixed() -> bool { true }
+
+	fn canonical(target: &mut String) {
+		target.push_str("uint256")
+	}
 }
 
-impl<T: Decodable> Decodable for Vec<T> {
+impl<T: AbiType> AbiType for Vec<T> {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
 		let len = u32::decode(stream)? as usize;
 		let mut result = Vec::with_capacity(len);
@@ -126,9 +137,7 @@ impl<T: Decodable> Decodable for Vec<T> {
 	}
 
 	fn is_fixed() -> bool { false }
-}
 
-impl<T: Encodable> Encodable for Vec<T> {
 	fn encode(self, sink: &mut Sink) {
 		sink.push(self.len() as u32);
 
@@ -137,7 +146,10 @@ impl<T: Encodable> Encodable for Vec<T> {
 		}
 	}
 
-	fn is_fixed() -> bool { false }
+	fn canonical(target: &mut String) {
+		T::canonical(target);
+		target.push_str("[]");
+	}
 }
 
 pub struct Stream<'a> {
@@ -153,7 +165,7 @@ impl<'a> Stream<'a> {
 		}
 	}
 
-	pub fn pop<T: Decodable>(&mut self) -> Result<T, Error> {
+	pub fn pop<T: AbiType>(&mut self) -> Result<T, Error> {
 		if T::is_fixed() {
 			T::decode(self)
 		} else {
@@ -181,7 +193,7 @@ impl Sink {
 		self.preamble.capacity() + self.heap.len()
 	}
 
-	pub fn push<T: Encodable>(&mut self, val: T) {
+	pub fn push<T: AbiType>(&mut self, val: T) {
 		if T::is_fixed() {
 			val.encode(self)
 		} else {
@@ -268,7 +280,7 @@ mod tests {
 		assert_eq!(bytes2, "0010000000000000000000000000000000000000000000000000000000000002".from_hex().unwrap());
 	}
 
-	fn double_decode<T1: super::Decodable, T2: super::Decodable>(payload: &[u8]) -> (T1, T2) {
+	fn double_decode<T1: super::AbiType, T2: super::AbiType>(payload: &[u8]) -> (T1, T2) {
 		let mut stream = super::Stream::new(payload);
 		(
 			stream.pop().expect("argument type 1 should be decoded"),
@@ -276,7 +288,7 @@ mod tests {
 		)
 	}
 
-	fn triple_decode<T1: super::Decodable, T2: super::Decodable, T3: super::Decodable>(payload: &[u8]) -> (T1, T2, T3) {
+	fn triple_decode<T1: super::AbiType, T2: super::AbiType, T3: super::AbiType>(payload: &[u8]) -> (T1, T2, T3) {
 		let mut stream = super::Stream::new(payload);
 		(
 			stream.pop().expect("argument type 1 should be decoded"),
@@ -285,13 +297,13 @@ mod tests {
 		)
 	}
 
-	fn single_encode<T: super::Encodable>(val: T) -> Vec<u8> {
+	fn single_encode<T: super::AbiType>(val: T) -> Vec<u8> {
 		let mut sink = super::Sink::new(1);
 		sink.push(val);
 		sink.finalize_panicking()
 	}
 
-	fn double_encode<T1: super::Encodable, T2: super::Encodable>(val1: T1, val2: T2) -> Vec<u8> {
+	fn double_encode<T1: super::AbiType, T2: super::AbiType>(val1: T1, val2: T2) -> Vec<u8> {
 		let mut sink = super::Sink::new(1);
 		sink.push(val1);
 		sink.push(val2);

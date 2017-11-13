@@ -10,6 +10,9 @@ panic = "abort"
 pwasm-abi = { path = ".." }
 quote = "0.3"
 syn = { version = "0.11", features = ["full"] }
+tiny-keccak = "*"
+byteorder = "1"
+parity-hash = "1"
 
 [lib]
 name = "pwasm_abi_derive"
