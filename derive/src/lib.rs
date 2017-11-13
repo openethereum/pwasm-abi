@@ -227,60 +227,95 @@ fn impl_eth_dispatch(
 		}
 	}).collect();
 
-	let branches = hashed_signatures.into_iter()
-		.zip(signatures.into_iter())
-		.filter_map(|(hs, ns)| {
-			if ns.name() == "ctor" {
-				return None;
-			}
+	// let branches = hashed_signatures.into_iter()
+	// 	.zip(signatures.into_iter())
+	// 	.filter_map(|(hs, ns)| {
+	// 		if ns.name() == "ctor" {
+	// 			return None;
+	// 		}
 
-			let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
-			let ident: syn::Ident = ns.name().into();
+	// 		let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
+	// 		let ident: syn::Ident = ns.name().into();
 
-			let args_line = std::iter::repeat(
-				quote! { args.next().expect("Failed to fetch next argument").into() }
-			).take(hs.signature().params().len());
+	// 		let args_line = std::iter::repeat(
+	// 			quote! { args.next().expect("Failed to fetch next argument").into() }
+	// 		).take(hs.signature().params().len());
 
-			let param_types = hs.signature().params().iter().map(|p| {
-				let ident = param_type_to_ident(&p);
-				quote! {
-					#ident
-				}
-			});
+	// 		let param_types = hs.signature().params().iter().map(|p| {
+	// 			let ident = param_type_to_ident(&p);
+	// 			quote! {
+	// 				#ident
+	// 			}
+	// 		});
 
-			if let Some(_) = hs.signature().result() {
-				Some(quote! {
-					#hash_literal => {
+	// 		if let Some(_) = hs.signature().result() {
+	// 			Some(quote! {
+	// 				#hash_literal => {
 
-						let mut args = ::pwasm_abi::eth::decode_values(&[#(#param_types),*], method_payload)
-							.expect("abi decode failed")
-							.into_iter();
+	// 					let mut args = ::pwasm_abi::eth::decode_values(&[#(#param_types),*], method_payload)
+	// 						.expect("abi decode failed")
+	// 						.into_iter();
 
-						let result: &[::pwasm_abi::eth::ValueType] = &[
+	// 					let result: &[::pwasm_abi::eth::ValueType] = &[
+	// 						inner.#ident(
+	// 							#(#args_line),*
+	// 						).into()
+	// 					];
+
+	// 					::pwasm_abi::eth::encode_values(result)
+	// 				}
+	// 			})
+	// 		} else {
+	// 			Some(quote! {
+	// 				#hash_literal => {
+	// 					let mut args = ::pwasm_abi::eth::decode_values(&[#(#param_types),*], method_payload)
+	// 						.expect("abi decode failed")
+	// 						.into_iter();
+
+	// 					inner.#ident(
+	// 						#(#args_line),*
+	// 					);
+	// 					Vec::new()
+	// 				}
+	// 			})
+	// 		}
+	// 	}
+	// );
+
+	let branches: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
+		match *item {
+			Item::Signature(ref signature)  => {
+				let hash_literal = syn::Lit::Int(signature.hash as u64, syn::IntTy::U32);
+				let ident = &signature.name;
+				let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
+
+				if let Some(_) = signature.return_type {
+					Some(quote! {
+						#hash_literal => {
+							let mut stream = ::pwasm_abi::eth::Stream::new(payload);
+							let result = inner.#ident(
+								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
+							);
+							let mut sink = ::pwasm_abi::eth::Sink::new(1);
+							sink.push(result);
+							sink.finalize_panicking()
+						}
+					})
+				} else {
+					Some(quote! {
+						#hash_literal => {
+							let mut stream = ::pwasm_abi::eth::Stream::new(payload);
 							inner.#ident(
-								#(#args_line),*
-							).into()
-						];
-
-						::pwasm_abi::eth::encode_values(result)
-					}
-				})
-			} else {
-				Some(quote! {
-					#hash_literal => {
-						let mut args = ::pwasm_abi::eth::decode_values(&[#(#param_types),*], method_payload)
-							.expect("abi decode failed")
-							.into_iter();
-
-						inner.#ident(
-							#(#args_line),*
-						);
-						Vec::new()
-					}
-				})
-			}
+								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
+							);
+							Vec::new()
+						}
+					})
+				}
+			},
+			_ => None,
 		}
-	);
+	}).collect();
 
 	let dispatch_table = quote! {
 		{

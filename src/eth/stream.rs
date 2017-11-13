@@ -126,6 +126,31 @@ impl AbiType for U256 {
 	}
 }
 
+impl AbiType for Address {
+	fn decode(stream: &mut Stream) -> Result<Self, Error> {
+		stream.position += 32;
+		if stream.position > stream.payload.len() {
+			return Err(Error::UnexpectedEof);
+		}
+
+		Ok(
+			Address::from(&stream.payload[stream.position-20..stream.position])
+		)
+	}
+
+	fn encode(self, sink: &mut Sink) {
+		let tail = sink.preamble.len();
+		sink.preamble.resize(tail + 32, 0);
+		sink.preamble[tail+12..tail+32].copy_from_slice(self.as_ref());
+	}
+
+	fn is_fixed() -> bool { true }
+
+	fn canonical(target: &mut String) {
+		target.push_str("uint256")
+	}
+}
+
 impl<T: AbiType> AbiType for Vec<T> {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
 		let len = u32::decode(stream)? as usize;
