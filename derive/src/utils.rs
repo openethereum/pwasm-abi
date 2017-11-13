@@ -100,13 +100,15 @@ pub fn push_canonical(target: &mut String, ty: &syn::Ty) {
 
 pub fn canonical(name: &syn::Ident, method_sig: &syn::MethodSig) -> String {
 	let mut s = String::new();
-	s.push('(');
 	s.push_str(&name.to_string());
+	s.push('(');
 	let total_len = method_sig.decl.inputs.len();
 	for (i, (_, ty)) in iter_signature(method_sig).enumerate() {
 		push_canonical(&mut s, &ty);
-		if i != total_len - 1 { s.push(','); }
+		if i != total_len-2 { s.push(','); }
 	}
+	s.push(')');
+
 	s
 }
 
