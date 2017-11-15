@@ -101,7 +101,15 @@ fn impl_eth_dispatch(
 	);
 
 	let client_ctor = intf.constructor().map(
-		|signature| utils::produce_signature(&signature.name, &signature.method_sig, quote! { unimplemented!() })
+		|signature| utils::produce_signature(
+			&signature.name,
+			&signature.method_sig,
+			quote! {
+				#![allow(unused_mut)]
+				#![allow(unused_variables)]
+				unimplemented!()
+			}
+		)
 	);
 
 	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
@@ -134,6 +142,8 @@ fn impl_eth_dispatch(
 					&signature.name,
 					&signature.method_sig,
 					quote!{
+						#![allow(unused_mut)]
+						#![allow(unused_variables)]
 						let mut payload = Vec::with_capacity(4 + #argument_count_literal * 32);
 						payload.push((#hash_literal >> 24) as u8);
 						payload.push((#hash_literal >> 16) as u8);
@@ -251,6 +261,8 @@ fn impl_eth_dispatch(
 		}
 
 		impl<T: #name_ident> ::pwasm_abi::eth::EndpointInterface for #endpoint_ident<T> {
+			#[allow(unused_mut)]
+			#[allow(unused_variables)]
 			fn dispatch(&mut self, payload: &[u8]) -> Vec<u8> {
 				let inner = &mut self.inner;
 				if payload.len() < 4 {
@@ -270,6 +282,7 @@ fn impl_eth_dispatch(
 			}
 
 			#[allow(unused_variables)]
+			#[allow(unused_mut)]
 			fn dispatch_ctor(&mut self, payload: &[u8]) {
 				#ctor_branch
 			}
