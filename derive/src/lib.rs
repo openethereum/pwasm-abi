@@ -41,43 +41,6 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	generated.parse().expect("Failed to parse generated input")
 }
 
-fn item_to_signature(item: &Item) -> Option<abi::eth::NamedSignature> {
-	match *item {
-		Item::Signature(ref signature) => {
-			let name = signature.name.as_ref().to_string();
-			Some(
-				abi::eth::NamedSignature::new(
-					name,
-					utils::parse_rust_signature(&signature.method_sig),
-				)
-			)
-		},
-		_ => None,
-	}
-}
-
-fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
-	use abi::eth::ParamType;
-	match *param_type {
-		ParamType::U32 => quote! { ::pwasm_abi::eth::ParamType::U32 },
-		ParamType::I32 => quote! { ::pwasm_abi::eth::ParamType::U32 },
-		ParamType::U64 => quote! { ::pwasm_abi::eth::ParamType::U32 },
-		ParamType::I64 => quote! { ::pwasm_abi::eth::ParamType::U32 },
-		ParamType::Bool => quote! { ::pwasm_abi::eth::ParamType::Bool },
-		ParamType::U256 => quote! { ::pwasm_abi::eth::ParamType::U256 },
-		ParamType::H256 => quote! { ::pwasm_abi::eth::ParamType::H256 },
-		ParamType::Address => quote! { ::pwasm_abi::eth::ParamType::Address },
-		ParamType::Bytes => quote! { ::pwasm_abi::eth::ParamType::Bytes },
-		ParamType::Array(ref t) => {
-			let nested = param_type_to_ident(t.as_ref());
-			quote! {
-				::pwasm_abi::eth::ParamType::Array(::pwasm_abi::eth::ArrayRef::Static(&#nested))
-			}
-		},
-		ParamType::String => quote! { ::pwasm_abi::eth::ParamType::String },
-	}
-}
-
 fn impl_eth_dispatch(
 	item: syn::Item,
 	endpoint_name: String,

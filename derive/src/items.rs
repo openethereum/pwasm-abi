@@ -39,7 +39,7 @@ impl Item {
 		match *self {
 			Signature(ref sig) => Some(&sig.name),
 			Event(ref event) => Some(&event.name),
-			Other(ref other) => None,
+			Other(_) => None,
 		}
 	}
 }
