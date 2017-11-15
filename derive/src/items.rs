@@ -17,6 +17,7 @@ pub struct Event {
 	pub signature: NamedSignature,
 }
 
+#[derive(Clone)]
 pub struct Signature {
 	pub name: syn::Ident,
 	pub canonical: String,
@@ -91,6 +92,10 @@ impl Interface {
 
 	pub fn client_name(&self) -> &str {
 		&self.client_name
+	}
+
+	pub fn constructor(&self) -> Option<&Signature> {
+		self.constructor.as_ref()
 	}
 }
 
@@ -212,9 +217,11 @@ impl quote::ToTokens for Interface {
 		let trait_ident: syn::Ident = self.name.clone().into();
 
 		let items = &self.items;
+		let constructor_item = self.constructor().map(|c| Item::Signature(c.clone()));
 		tokens.append(
 			quote! (
 				pub trait #trait_ident {
+					#constructor_item
 					#(#items)*
 				}
 			)

@@ -88,93 +88,16 @@ fn impl_eth_dispatch(
 		.client(client_name)
 		.endpoint(endpoint_name);
 
-	let signatures: Vec<abi::eth::NamedSignature> =
-		intf.items().iter().filter_map(item_to_signature).collect();
-
-	let (ctor_branch, ctor_signature) = {
-
-		let ctor_signature = signatures.iter().find(|ns| ns.name() == "ctor");
-
-		let ctor_branch = ctor_signature.map(|ns| {
-			let param_types = ns.signature().params().iter().map(|p| {
-				let ident = param_type_to_ident(&p);
-				quote! {
-					#ident
-				}
-			});
-
-			let args_line = std::iter::repeat(
-				quote! { args.next().expect("Failed to fetch next argument").into() }
-			).take(ns.signature().params().len());
-
+	let ctor_branch = intf.constructor().map(
+		|signature| {
 			quote! {
-				let mut args = ::pwasm_abi::eth::decode_values(&[#(#param_types),*], payload)
-					.expect("abi decode failed")
-					.into_iter();
-
-				self.inner.ctor(
-					#(#args_line),*
+				let mut stream = ::pwasm_abi::eth::Stream::new(payload);
+				self.inner.constructor(
+					#(stream.pop().expect("argument decoding failed")),*
 				);
 			}
-		});
-
-		let ctor_dispatch_effective = ctor_signature.map(|ns|
-			{
-				let param_types = ns.signature().params().iter().map(|p| {
-					let ident = param_type_to_ident(&p);
-					quote! { #ident }
-				});
-
-				quote! {
-					Some(::pwasm_abi::eth::Signature {
-						params: Cow::Borrowed(&[#(#param_types),*]),
-						result: None,
-					})
-				}
-			}
-		).unwrap_or(quote! { None });
-
-		(ctor_branch, ctor_dispatch_effective)
-	};
-
-	let hashed_signatures: Vec<abi::eth::HashSignature> =
-		signatures.clone().into_iter()
-			.map(From::from)
-			.collect();
-
-	let table_signatures = hashed_signatures.clone().into_iter().map(|hs| {
-		let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
-
-		let param_types = hs.signature().params().iter().map(|p| {
-			let ident = param_type_to_ident(&p);
-			quote! {
-				#ident
-			}
-		});
-
-		if let Some(result_type) = hs.signature().result() {
-			let return_type = param_type_to_ident(result_type);
-			quote! {
-				::pwasm_abi::eth::HashSignature {
-					hash: #hash_literal,
-					signature: ::pwasm_abi::eth::Signature {
-						params: Cow::Borrowed(&[#(#param_types),*]),
-						result: Some(#return_type),
-					}
-				}
-			}
-		} else {
-			quote! {
-				::pwasm_abi::eth::HashSignature {
-					hash: #hash_literal,
-					signature: ::pwasm_abi::eth::Signature {
-						params: Cow::Borrowed(&[#(#param_types),*]),
-						result: None,
-					}
-				}
-			}
 		}
-	});
+	);
 
 	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
 		match *item {
@@ -274,16 +197,6 @@ fn impl_eth_dispatch(
 		}
 	}).collect();
 
-	let dispatch_table = quote! {
-		{
-			const TABLE: &'static ::pwasm_abi::eth::Table = &::pwasm_abi::eth::Table {
-				inner: Cow::Borrowed(&[#(#table_signatures),*]),
-				fallback: #ctor_signature,
-			};
-			TABLE
-		}
-	};
-
 	let endpoint_ident: syn::Ident = intf.endpoint_name().clone().into();
 	let client_ident: syn::Ident = intf.client_name().clone().into();
 	let name_ident: syn::Ident = intf.name().clone().into();
@@ -294,7 +207,6 @@ fn impl_eth_dispatch(
 		pub struct #client_ident {
 			address: Address,
 			value: Option<U256>,
-			table: &'static ::pwasm_abi::eth::Table,
 		}
 
 		pub struct #endpoint_ident<T: #name_ident> {
@@ -305,7 +217,6 @@ fn impl_eth_dispatch(
 			pub fn new(address: Address) -> Self {
 				#client_ident {
 					address: address,
-					table: #dispatch_table,
 					value: None,
 				}
 			}

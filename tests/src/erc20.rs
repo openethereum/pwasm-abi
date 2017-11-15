@@ -18,7 +18,7 @@ mod contract {
 
 	#[eth_abi(Endpoint, Client)]
 	pub trait TokenContract {
-		fn ctor(&mut self, total_supply: U256);
+		fn constructor(&mut self, total_supply: U256);
 		fn balanceOf(&mut self, _owner: Address) -> U256;
 		fn transfer(&mut self, _to: Address, _amount: U256) -> bool;
 		fn totalSupply(&mut self) -> U256;
@@ -31,7 +31,7 @@ mod contract {
 	}
 
 	impl TokenContract for Instance {
-		fn ctor(&mut self, total_supply: U256) {
+		fn constructor(&mut self, total_supply: U256) {
 			self.total_supply = total_supply;
 		}
 
