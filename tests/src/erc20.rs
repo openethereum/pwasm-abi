@@ -1,5 +1,6 @@
 use bigint::U256;
 use parity_hash::Address;
+use pwasm_abi::eth::EndpointInterface;
 
 mod contract {
 	#![allow(non_snake_case)]

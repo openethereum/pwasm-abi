@@ -19,3 +19,8 @@ pub use self::log::AsLog;
 pub use self::encode::encode as encode_values;
 pub use self::decode::decode as decode_values;
 pub use self::stream::{Stream, Sink, AbiType};
+
+pub trait EndpointInterface {
+	fn dispatch(&mut self, payload: &[u8]) -> ::lib::Vec<u8>;
+	fn dispatch_ctor(&mut self, payload: &[u8]);
+}
