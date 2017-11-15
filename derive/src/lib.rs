@@ -90,13 +90,18 @@ fn impl_eth_dispatch(
 
 	let ctor_branch = intf.constructor().map(
 		|signature| {
+			let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
 			quote! {
 				let mut stream = ::pwasm_abi::eth::Stream::new(payload);
 				self.inner.constructor(
-					#(stream.pop().expect("argument decoding failed")),*
+					#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
 				);
 			}
 		}
+	);
+
+	let client_ctor = intf.constructor().map(
+		|signature| utils::produce_signature(&signature.name, &signature.method_sig, quote! { unimplemented!() })
 	);
 
 	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
@@ -228,6 +233,7 @@ fn impl_eth_dispatch(
 		}
 
 		impl #name_ident for #client_ident {
+			#client_ctor
 			#(#calls)*
 		}
 
