@@ -231,7 +231,7 @@ impl Sink {
 		}
 	}
 
-	fn drain_to(self, target: &mut Vec<u8>) {
+	pub fn drain_to(self, target: &mut Vec<u8>) {
 		let preamble = self.preamble;
 		let heap = self.heap;
 		target.reserve(preamble.len() + heap.len());

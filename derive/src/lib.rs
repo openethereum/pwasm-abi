@@ -179,37 +179,49 @@ fn impl_eth_dispatch(
 	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
 		match *item {
 			Item::Signature(ref signature)  => {
-				let signature_index = signatures.iter().position(|s| s.name() == signature.name.as_ref()).expect("signature with this name known to exist");
-				let hash = *&hashed_signatures[signature_index].hash();
-				let hash_literal = syn::Lit::Int(hash as u64, syn::IntTy::U32);
+				let hash_literal = syn::Lit::Int(signature.hash as u64, syn::IntTy::U32);
+				let argument_push: Vec<quote::Tokens> = utils::iter_signature(&signature.method_sig)
+					.map(|(pat, _)| quote! { sink.push(#pat); })
+					.collect();
+				let argument_count_literal = syn::Lit::Int(argument_push.len() as u64, syn::IntTy::Usize);
 
-				let args = signature.method_sig.decl.inputs.iter().filter_map(|arg| {
-					match *arg {
-						syn::FnArg::Captured(ref pat, _) => Some(pat),
-						_ => None,
-					}
-				});
+				let result_instance = match signature.method_sig.decl.output {
+					syn::FunctionRetTy::Default => quote!{
+						let mut result = Vec::new();
+					},
+					syn::FunctionRetTy::Ty(_) => quote!{
+						let mut result = [0u8; 32];
+					},
+				};
 
-				let body_appendix = match signature.method_sig.decl.output {
-					syn::FunctionRetTy::Default => quote!{;},
-					syn::FunctionRetTy::Ty(_) => quote!{.expect("abi should return value").into()},
+				let result_pop = match signature.method_sig.decl.output {
+					syn::FunctionRetTy::Default => None,
+					syn::FunctionRetTy::Ty(_) => Some(quote!{
+						let mut stream = ::pwasm_abi::eth::Stream::new(&result);
+						stream.pop().expect("failed decode call output")
+					}),
 				};
 
 				Some(utils::produce_signature(
 					&signature.name,
 					&signature.method_sig,
 					quote!{
-						let values: &[::pwasm_abi::eth::ValueType] = &[
-							#(#args.into()),*
-						];
-						self.table
-							.call(#hash_literal, values, |payload| {
-								call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut[])
-									.expect("call failed");
-								None
-							})
-							.expect("abi dispatch failed")
-							#body_appendix
+						let mut payload = Vec::with_capacity(4 + #argument_count_literal * 32);
+						payload.push((#hash_literal >> 24) as u8);
+						payload.push((#hash_literal >> 16) as u8);
+						payload.push((#hash_literal >> 8) as u8);
+						payload.push(#hash_literal as u8);
+
+						let sink = ::pwasm_abi::eth::Sink::new(#argument_count_literal);
+						#(argument_push)*
+
+						sink.drain_to(&mut payload);
+
+						#result_instance
+
+						call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut result[..]);
+
+						#result_pop
 					}
 				))
 			},
