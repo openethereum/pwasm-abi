@@ -21,7 +21,7 @@ pub enum Error {
 	InvalidBool,
 	/// Invalid u32 for provided input
 	InvalidU32,
-	/// Invalid u32 for provided input
+	/// Invalid u64 for provided input
 	InvalidU64,
 	/// Unexpected end of the stream
 	UnexpectedEof,
