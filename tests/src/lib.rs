@@ -10,11 +10,6 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 #[cfg(not(test))]
-use alloc::borrow::Cow;
-#[cfg(test)]
-use std::borrow::Cow;
-
-#[cfg(not(test))]
 use core::cell::RefCell;
 #[cfg(test)]
 use std::cell::RefCell;

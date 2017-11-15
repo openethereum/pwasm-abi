@@ -179,15 +179,17 @@ impl quote::ToTokens for Item {
 							let data_pats = event.data.iter()
 								.map(|&(ref pat, _)| pat);
 
+							let data_pats_count_lit = syn::Lit::Int(event.data.len() as u64, syn::IntTy::Usize);
+
 							quote! {
 								let topics = &[
 									[#(#hash_bytes),*].into(),
 									#(::pwasm_abi::eth::AsLog::as_log(&#indexed_pats)),*
 								];
-								let values: &[::pwasm_abi::eth::ValueType] = &[
-									#(#data_pats.into()),*
-								];
-								let payload = ::pwasm_abi::eth::encode_values(values);
+
+								let mut sink = ::pwasm_abi::eth::Sink::new(#data_pats_count_lit);
+								#(sink.push(#data_pats));*;
+								let payload = sink.finalize_panicking();
 
 								log(topics, &payload);
 							}
