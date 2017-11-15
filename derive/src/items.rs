@@ -5,6 +5,7 @@ pub struct Interface {
 	name: String,
 	endpoint_name: String,
 	client_name: String,
+	constructor: Option<Signature>,
 	items: Vec<Item>,
 }
 
@@ -31,6 +32,17 @@ pub enum Item {
 	Other(syn::TraitItem),
 }
 
+impl Item {
+	fn name(&self) -> Option<&syn::Ident> {
+		use Item::*;
+		match *self {
+			Signature(ref sig) => Some(&sig.name),
+			Event(ref event) => Some(&event.name),
+			Other(ref other) => None,
+		}
+	}
+}
+
 impl Interface {
 	pub fn from_item(source: syn::Item) -> Self {
 		let trait_items = match source.node {
@@ -38,11 +50,20 @@ impl Interface {
 			_ => { panic!("Dispatch trait can work with trait declarations only!"); }
 		};
 
+		let (constructor_items, other_items) = trait_items
+			.into_iter()
+			.map(Item::from_trait_item)
+			.partition::<Vec<Item>, _>(|item| item.name().map_or(false, |ident| ident.as_ref() == "constructor"));
+
 		Interface {
+			constructor: constructor_items
+				.into_iter()
+				.next()
+				.map(|item| match item { Item::Signature(sig) => sig, _ => panic!("constructor must be function!") }),
 			name: source.ident.as_ref().to_string(),
 			endpoint_name: String::new(),
 			client_name: String::new(),
-			items: trait_items.into_iter().map(Item::from_trait_item).collect(),
+			items: other_items,
 		}
 	}
 
@@ -70,6 +91,25 @@ impl Interface {
 
 	pub fn client_name(&self) -> &str {
 		&self.client_name
+	}
+}
+
+fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig) -> Signature {
+	let arguments: Vec<(syn::Pat, syn::Ty)> = utils::iter_signature(&method_sig).collect();
+	let canonical = utils::canonical(&ident, &method_sig);
+	let return_type: Option<syn::Ty> = match method_sig.decl.output {
+		syn::FunctionRetTy::Default => None,
+		syn::FunctionRetTy::Ty(ref ty) => Some(ty.clone()),
+	};
+	let hash = utils::hash(&canonical);
+
+	Signature {
+		name: ident,
+		arguments: arguments,
+		method_sig: method_sig,
+		canonical: canonical,
+		hash: hash,
+		return_type: return_type,
 	}
 }
 
@@ -101,24 +141,7 @@ impl Item {
 
 					Item::Event(event)
 				} else {
-					let arguments: Vec<(syn::Pat, syn::Ty)> = utils::iter_signature(&method_sig).collect();
-					let canonical = utils::canonical(&ident, &method_sig);
-					let return_type: Option<syn::Ty> = match method_sig.decl.output {
-						syn::FunctionRetTy::Default => None,
-						syn::FunctionRetTy::Ty(ref ty) => Some(ty.clone()),
-					};
-					let hash = utils::hash(&canonical);
-
-					let signature = Signature {
-						name: ident,
-						arguments: arguments,
-						method_sig: method_sig,
-						canonical: canonical,
-						hash: hash,
-						return_type: return_type,
-					};
-
-					Item::Signature(signature)
+					Item::Signature(into_signature(ident, method_sig))
 				}
 			},
 			_ => {
