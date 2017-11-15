@@ -212,8 +212,8 @@ fn impl_eth_dispatch(
 						payload.push((#hash_literal >> 8) as u8);
 						payload.push(#hash_literal as u8);
 
-						let sink = ::pwasm_abi::eth::Sink::new(#argument_count_literal);
-						#(argument_push)*
+						let mut sink = ::pwasm_abi::eth::Sink::new(#argument_count_literal);
+						#(#argument_push)*
 
 						sink.drain_to(&mut payload);
 
