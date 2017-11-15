@@ -1,5 +1,4 @@
 use {quote, syn, utils};
-use abi::eth::NamedSignature;
 
 pub struct Interface {
 	name: String,
@@ -11,10 +10,10 @@ pub struct Interface {
 
 pub struct Event {
 	pub name: syn::Ident,
+	pub canonical: String,
 	pub method_sig: syn::MethodSig,
 	pub indexed: Vec<(syn::Pat, syn::Ty)>,
 	pub data: Vec<(syn::Pat, syn::Ty)>,
-	pub signature: NamedSignature,
 }
 
 #[derive(Clone)]
@@ -131,16 +130,13 @@ impl Item {
 				}) {
 					let (indexed, non_indexed) = utils::iter_signature(&method_sig)
 						.partition(|&(ref pat, _)| quote! { #pat }.to_string().starts_with("indexed_"));
+					let canonical = utils::canonical(&ident, &method_sig);
 
-					let named_signature =  NamedSignature::new(
-						ident.to_string(),
-						utils::parse_rust_signature(&method_sig)
-					);
 					let event = Event {
 						name: ident,
+						canonical: canonical,
 						indexed: indexed,
 						data: non_indexed,
-						signature: named_signature,
 						method_sig: method_sig,
 					};
 
@@ -167,9 +163,8 @@ impl quote::ToTokens for Item {
 						name,
 						method_sig,
 						{
-							let hash = event.signature.hash();
-
-							let hash_bytes = hash.as_ref().iter().map(|b| {
+							let keccak = utils::keccak(&event.canonical);
+							let hash_bytes = keccak.as_ref().iter().map(|b| {
 								syn::Lit::Int(*b as u64, syn::IntTy::U8)
 							});
 

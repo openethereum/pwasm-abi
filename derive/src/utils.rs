@@ -1,4 +1,4 @@
-use {syn, quote, abi};
+use {syn, quote};
 use tiny_keccak::Keccak;
 use parity_hash::H256;
 use byteorder::{BigEndian, ByteOrder};
@@ -112,68 +112,15 @@ pub fn canonical(name: &syn::Ident, method_sig: &syn::MethodSig) -> String {
 	s
 }
 
-pub fn hash(s: &str) -> u32 {
+pub fn keccak(s: &str) -> H256 {
 	let mut keccak = Keccak::new_keccak256();
 	let mut res = H256::zero();
 	keccak.update(s.as_bytes());
 	keccak.finalize(res.as_mut());
-
-	BigEndian::read_u32(&res.as_ref()[0..4])
+	res
 }
 
-pub fn ty_to_param_type(ty: &syn::Ty) -> abi::eth::ParamType {
-	match *ty {
-		syn::Ty::Path(None, ref path) => {
-			let last_path = path.segments.last().unwrap();
-			match last_path.ident.to_string().as_ref() {
-				"u32" => abi::eth::ParamType::U32,
-				"i32" => abi::eth::ParamType::I32,
-				"u64" => abi::eth::ParamType::U64,
-				"i64" => abi::eth::ParamType::I64,
-				"U256" => abi::eth::ParamType::U256,
-				"H256" => abi::eth::ParamType::H256,
-				"Address" => abi::eth::ParamType::Address,
-				"Vec" => {
-					match last_path.parameters {
-						syn::PathParameters::AngleBracketed(ref param_data) => {
-							let vec_arg = param_data.types.last().unwrap();
-							if let syn::Ty::Path(None, ref nested_path) = *vec_arg {
-								if "u8" == nested_path.segments.last().unwrap().ident.to_string() {
-									return abi::eth::ParamType::Bytes;
-								}
-							}
-							abi::eth::ParamType::Array(ty_to_param_type(vec_arg).into())
-						},
-						_ => panic!("Unsupported vec arguments"),
-					}
-				},
-				"String" => abi::eth::ParamType::String,
-				"bool" => abi::eth::ParamType::Bool,
-				ref val @ _ => panic!("Unable to handle param of type {}: not supported by abi", val)
-			}
-		},
-		ref val @ _ => panic!("Unable to handle param of type {:?}: not supported by abi", val),
-	}
-}
-
-pub fn parse_rust_signature(method_sig: &syn::MethodSig) -> abi::eth::Signature {
-	let mut params = Vec::new();
-
-	for fn_arg in method_sig.decl.inputs.iter() {
-		match *fn_arg {
-			syn::FnArg::Captured(_, ref ty) => {
-				params.push(ty_to_param_type(ty));
-			},
-			syn::FnArg::SelfValue(_) => { panic!("cannot use self by value"); },
-			_ => {},
-		}
-	}
-
-	abi::eth::Signature::new(
-		params,
-		match method_sig.decl.output {
-			syn::FunctionRetTy::Default => None,
-			syn::FunctionRetTy::Ty(ref ty) => Some(ty_to_param_type(ty)),
-		}
-	)
+pub fn hash(s: &str) -> u32 {
+	let keccak = keccak(s);
+	BigEndian::read_u32(&keccak.as_ref()[0..4])
 }

@@ -1,26 +1,53 @@
 //! Legacy Ethereum-like ABI generator
 
-mod param_type;
-mod value_type;
-mod signature;
-mod encode;
-mod decode;
+#![warn(missing_docs)]
+
 mod util;
-mod dispatch;
 mod log;
 mod stream;
+mod sink;
+mod common;
+#[cfg(test)]
+mod tests;
 
-pub use self::param_type::{ParamType, ArrayRef};
-pub use self::value_type::ValueType;
-pub use self::signature::Signature;
-pub use self::util::Error;
-pub use self::dispatch::{HashSignature, NamedSignature, Table};
 pub use self::log::AsLog;
-pub use self::encode::encode as encode_values;
-pub use self::decode::decode as decode_values;
-pub use self::stream::{Stream, Sink, AbiType};
+pub use self::stream::Stream;
+pub use self::sink::Sink;
 
+/// Error for decoding rust types from stream
+#[derive(Debug)]
+pub enum Error {
+	/// Invalid bool for provided input
+	InvalidBool,
+	/// Invalid u32 for provided input
+	InvalidU32,
+	/// Invalid u32 for provided input
+	InvalidU64,
+	/// Unexpected end of the stream
+	UnexpectedEof,
+	/// Invalid padding for fixed type
+	InvalidPadding,
+	/// Other error
+	Other,
+}
+
+/// Abi type trait
+pub trait AbiType : Sized {
+	/// Insantiate type from data stream
+	fn decode(stream: &mut Stream) -> Result<Self, Error>;
+
+	/// Push type to data sink
+	fn encode(self, sink: &mut Sink);
+
+	/// Return whether type has fixed length or not
+	fn is_fixed() -> bool;
+}
+
+/// Endpoint interface for contracts
 pub trait EndpointInterface {
+	/// Dispatch payload for regular method
 	fn dispatch(&mut self, payload: &[u8]) -> ::lib::Vec<u8>;
+
+	/// Dispatch constructor payload
 	fn dispatch_ctor(&mut self, payload: &[u8]);
 }

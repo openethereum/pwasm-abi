@@ -1,8 +1,13 @@
+//! Log module
+
 use byteorder::{BigEndian, ByteOrder};
 use parity_hash::{H256, Address};
 use bigint::U256;
 
+/// As log trait for how primitive types are represented as indexed arguments
+/// of the event log
 pub trait AsLog {
+    /// Convert type to hash representation for the event log.
     fn as_log(&self) -> H256;
 }
 
