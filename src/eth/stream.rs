@@ -5,8 +5,8 @@ use super::{AbiType, Error};
 
 /// Stream interpretation of incoming payload
 pub struct Stream<'a> {
-    payload: &'a [u8],
-    position: usize,
+	payload: &'a [u8],
+	position: usize,
 }
 
 impl<'a> Stream<'a> {
