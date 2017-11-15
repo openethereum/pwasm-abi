@@ -34,10 +34,14 @@ impl<'a> Stream<'a> {
 	pub fn position(&self) -> usize { self.position }
 
 	/// Advance stream position for `amount` bytes
-	pub fn advance(&mut self, amount: usize) -> usize {
+	pub fn advance(&mut self, amount: usize) -> Result<usize, Error> {
+		if self.position + amount > self.payload.len() {
+			return Err(Error::UnexpectedEof);
+		}
+
 		let old_position = self.position;
 		self.position += amount;
-		old_position
+		Ok(old_position)
 	}
 
 	/// Finish current advance, advancing stream to the next 32 byte step

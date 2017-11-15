@@ -7,10 +7,7 @@ use bigint::U256;
 
 impl AbiType for u32 {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
-		let previous_position = stream.advance(32);
-		if stream.position() > stream.payload().len() {
-			return Err(Error::UnexpectedEof);
-		}
+		let previous_position = stream.advance(32)?;
 
 		let slice = &stream.payload()[previous_position..stream.position()];
 
@@ -35,10 +32,7 @@ impl AbiType for u32 {
 
 impl AbiType for u64 {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
-		let previous_position = stream.advance(32);
-		if stream.position() > stream.payload().len() {
-			return Err(Error::UnexpectedEof);
-		}
+		let previous_position = stream.advance(32)?;
 
 		let slice = &stream.payload()[previous_position..stream.position()];
 
@@ -71,7 +65,7 @@ impl AbiType for Vec<u8> {
 		let len = u32::decode(stream)? as usize;
 
 		let result = stream.payload()[stream.position()..stream.position() + len].to_vec();
-		stream.advance(len);
+		stream.advance(len)?;
 		stream.finish_advance();
 
 		Ok(result)
@@ -109,10 +103,7 @@ impl AbiType for bool {
 
 impl AbiType for U256 {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
-		let previous = stream.advance(32);
-		if stream.position() > stream.payload().len() {
-			return Err(Error::UnexpectedEof);
-		}
+		let previous = stream.advance(32)?;
 
 		Ok(
 			U256::from_big_endian(&stream.payload()[previous..stream.position()])
@@ -130,10 +121,7 @@ impl AbiType for U256 {
 
 impl AbiType for Address {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
-		stream.advance(32);
-		if stream.position() > stream.payload().len() {
-			return Err(Error::UnexpectedEof);
-		}
+		stream.advance(32)?;
 
 		Ok(
 			Address::from(&stream.payload()[stream.position()-20..stream.position()])
@@ -179,10 +167,7 @@ impl AbiType for i32 {
 			return Ok(u32::decode(stream)? as i32);
 		}
 
-		let previous_position = stream.advance(32);
-		if stream.position() > stream.payload().len() {
-			return Err(Error::UnexpectedEof);
-		}
+		let previous_position = stream.advance(32)?;
 
 		let slice = &stream.payload()[previous_position..stream.position()];
 
@@ -216,10 +201,7 @@ impl AbiType for i64 {
 			return Ok(u64::decode(stream)? as i64);
 		}
 
-		let previous_position = stream.advance(32);
-		if stream.position() > stream.payload().len() {
-			return Err(Error::UnexpectedEof);
-		}
+		let previous_position = stream.advance(32)?;
 
 		let slice = &stream.payload()[previous_position..stream.position()];
 
