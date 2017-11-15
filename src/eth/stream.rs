@@ -1,3 +1,4 @@
+use lib::*;
 use super::util;
 use parity_hash::Address;
 use bigint::U256;
@@ -61,7 +62,7 @@ impl AbiType for Vec<u8> {
 
 		let result = stream.payload[stream.position..stream.position + len].to_vec();
 		stream.position += len;
-		if stream.position % 32 > 0 { stream.position += (32 - (stream.position % 32)) };
+		if stream.position % 32 > 0 { stream.position += 32 - (stream.position % 32) };
 		Ok(result)
 	}
 
