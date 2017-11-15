@@ -147,3 +147,40 @@ fn sample2_decode() {
 	assert_eq!(v2, true);
 	assert_eq!(v3, vec![U256::from(1), U256::from(2), U256::from(3)]);
 }
+
+#[test]
+fn negative_i32() {
+	let x: i32 = -1;
+	let mut sink = ::eth::Sink::new(1);
+	sink.push(x);
+	let payload = sink.finalize_panicking();
+
+	assert_eq!(
+		&payload[..],
+		&[0xff; 32]
+	);
+
+	let mut stream = ::eth::Stream::new(&payload[..]);
+	let value: i32 = stream.pop().expect("x failed to pop");
+	assert_eq!(value, x);
+}
+
+#[test]
+fn negative_i32_max() {
+	let x: i32 = i32::min_value();
+	let mut sink = ::eth::Sink::new(1);
+	sink.push(x);
+	let payload = sink.finalize_panicking();
+
+	assert_eq!(
+		&payload[..],
+		&[
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+		  	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x80, 0x00, 0x00, 0x00
+		]
+	);
+
+	let mut stream = ::eth::Stream::new(&payload[..]);
+	let value: i32 = stream.pop().expect("x failed to pop");
+	assert_eq!(value, x);
+}

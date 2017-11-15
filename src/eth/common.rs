@@ -181,7 +181,7 @@ impl AbiType for i32 {
 			((slice[30] as u32) << 8) +
 			(slice[31] as u32);
 
-		Ok(-(result as i32))
+		Ok(result as i32)
 	}
 
 	fn is_fixed() -> bool { true }
@@ -220,7 +220,7 @@ impl AbiType for i64 {
 			((slice[30] as u64) << 8) +
 			 (slice[31] as u64);
 
-		Ok(-(result as i64))
+		Ok(result as i64)
 	}
 
 	fn is_fixed() -> bool { true }
