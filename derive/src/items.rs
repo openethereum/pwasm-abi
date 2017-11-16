@@ -1,25 +1,46 @@
 use {quote, syn, utils};
-use abi::eth::NamedSignature;
 
 pub struct Interface {
 	name: String,
 	endpoint_name: String,
 	client_name: String,
+	constructor: Option<Signature>,
 	items: Vec<Item>,
 }
 
 pub struct Event {
 	pub name: syn::Ident,
+	pub canonical: String,
 	pub method_sig: syn::MethodSig,
-	indexed: Vec<(syn::Pat, syn::Ty)>,
-	data: Vec<(syn::Pat, syn::Ty)>,
-	signature: NamedSignature,
+	pub indexed: Vec<(syn::Pat, syn::Ty)>,
+	pub data: Vec<(syn::Pat, syn::Ty)>,
+}
+
+#[derive(Clone)]
+pub struct Signature {
+	pub name: syn::Ident,
+	pub canonical: String,
+	pub method_sig: syn::MethodSig,
+	pub hash: u32,
+	pub arguments: Vec<(syn::Pat, syn::Ty)>,
+	pub return_type: Option<syn::Ty>,
 }
 
 pub enum Item {
-	Signature(syn::Ident, syn::MethodSig),
+	Signature(Signature),
 	Event(Event),
 	Other(syn::TraitItem),
+}
+
+impl Item {
+	fn name(&self) -> Option<&syn::Ident> {
+		use Item::*;
+		match *self {
+			Signature(ref sig) => Some(&sig.name),
+			Event(ref event) => Some(&event.name),
+			Other(_) => None,
+		}
+	}
 }
 
 impl Interface {
@@ -29,11 +50,20 @@ impl Interface {
 			_ => { panic!("Dispatch trait can work with trait declarations only!"); }
 		};
 
+		let (constructor_items, other_items) = trait_items
+			.into_iter()
+			.map(Item::from_trait_item)
+			.partition::<Vec<Item>, _>(|item| item.name().map_or(false, |ident| ident.as_ref() == "constructor"));
+
 		Interface {
+			constructor: constructor_items
+				.into_iter()
+				.next()
+				.map(|item| match item { Item::Signature(sig) => sig, _ => panic!("constructor must be function!") }),
 			name: source.ident.as_ref().to_string(),
 			endpoint_name: String::new(),
 			client_name: String::new(),
-			items: trait_items.into_iter().map(Item::from_trait_item).collect(),
+			items: other_items,
 		}
 	}
 
@@ -62,6 +92,29 @@ impl Interface {
 	pub fn client_name(&self) -> &str {
 		&self.client_name
 	}
+
+	pub fn constructor(&self) -> Option<&Signature> {
+		self.constructor.as_ref()
+	}
+}
+
+fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig) -> Signature {
+	let arguments: Vec<(syn::Pat, syn::Ty)> = utils::iter_signature(&method_sig).collect();
+	let canonical = utils::canonical(&ident, &method_sig);
+	let return_type: Option<syn::Ty> = match method_sig.decl.output {
+		syn::FunctionRetTy::Default => None,
+		syn::FunctionRetTy::Ty(ref ty) => Some(ty.clone()),
+	};
+	let hash = utils::hash(&canonical);
+
+	Signature {
+		name: ident,
+		arguments: arguments,
+		method_sig: method_sig,
+		canonical: canonical,
+		hash: hash,
+		return_type: return_type,
+	}
 }
 
 impl Item {
@@ -77,23 +130,19 @@ impl Item {
 				}) {
 					let (indexed, non_indexed) = utils::iter_signature(&method_sig)
 						.partition(|&(ref pat, _)| quote! { #pat }.to_string().starts_with("indexed_"));
+					let canonical = utils::canonical(&ident, &method_sig);
 
-					let named_signature =  NamedSignature::new(
-						ident.to_string(),
-						utils::parse_rust_signature(&method_sig)
-					);
 					let event = Event {
 						name: ident,
+						canonical: canonical,
 						indexed: indexed,
 						data: non_indexed,
-						signature: named_signature,
 						method_sig: method_sig,
 					};
 
 					Item::Event(event)
 				} else {
-
-					Item::Signature(ident, method_sig)
+					Item::Signature(into_signature(ident, method_sig))
 				}
 			},
 			_ => {
@@ -114,9 +163,8 @@ impl quote::ToTokens for Item {
 						name,
 						method_sig,
 						{
-							let hash = event.signature.hash();
-
-							let hash_bytes = hash.as_ref().iter().map(|b| {
+							let keccak = utils::keccak(&event.canonical);
+							let hash_bytes = keccak.as_ref().iter().map(|b| {
 								syn::Lit::Int(*b as u64, syn::IntTy::U8)
 							});
 
@@ -126,15 +174,17 @@ impl quote::ToTokens for Item {
 							let data_pats = event.data.iter()
 								.map(|&(ref pat, _)| pat);
 
+							let data_pats_count_lit = syn::Lit::Int(event.data.len() as u64, syn::IntTy::Usize);
+
 							quote! {
 								let topics = &[
 									[#(#hash_bytes),*].into(),
 									#(::pwasm_abi::eth::AsLog::as_log(&#indexed_pats)),*
 								];
-								let values: &[::pwasm_abi::eth::ValueType] = &[
-									#(#data_pats.into()),*
-								];
-								let payload = ::pwasm_abi::eth::encode_values(values);
+
+								let mut sink = ::pwasm_abi::eth::Sink::new(#data_pats_count_lit);
+								#(sink.push(#data_pats));*;
+								let payload = sink.finalize_panicking();
 
 								log(topics, &payload);
 							}
@@ -142,12 +192,12 @@ impl quote::ToTokens for Item {
 					)
 				]);
 			},
-			Item::Signature(ref name, ref method_sig) => {
+			Item::Signature(ref signature) => {
 				tokens.append_all(&[syn::TraitItem {
-					ident: name.clone(),
+					ident: signature.name.clone(),
 					attrs: Vec::new(),
 					node: syn::TraitItemKind::Method(
-						method_sig.clone(),
+						signature.method_sig.clone(),
 						None,
 					),
 				}]);
@@ -164,9 +214,11 @@ impl quote::ToTokens for Interface {
 		let trait_ident: syn::Ident = self.name.clone().into();
 
 		let items = &self.items;
+		let constructor_item = self.constructor().map(|c| Item::Signature(c.clone()));
 		tokens.append(
 			quote! (
 				pub trait #trait_ident {
+					#constructor_item
 					#(#items)*
 				}
 			)

@@ -1,15 +1,6 @@
-use lib::*;
+//! Utility module
 
-#[derive(Debug)]
-pub enum Error {
-	UnknownSignature,
-	NoLengthForSignature,
-	NoFallback,
-	ResultCantFit,
-	UnexpectedEnd,
-	InvalidPadding,
-	InvalidUtf8,
-}
+use lib::*;
 
 pub type Hash = [u8; 32];
 
@@ -67,90 +58,4 @@ pub fn pad_i32(value: i32) -> Hash {
 	padded[30] = (value >> 8) as u8;
 	padded[31] = value as u8;
 	padded
-}
-
-pub fn as_u32(slice: &Hash) -> Result<u32, Error> {
-	if !slice[..28].iter().all(|x| *x == 0) {
-		return Err(Error::InvalidPadding);
-	}
-
-	let result = ((slice[28] as u32) << 24) +
-		((slice[29] as u32) << 16) +
-		((slice[30] as u32) << 8) +
-		(slice[31] as u32);
-
-	Ok(result)
-}
-
-pub fn as_i32(slice: &Hash) -> Result<i32, Error> {
-	let is_negative = slice[0] & 0x80 != 0;
-
-	if !is_negative {
-		return Ok(as_u32(slice)? as i32);
-	}
-
-	// only negative path here
-
-	if !slice[1..28].iter().all(|x| *x == 0xff) {
-		return Err(Error::InvalidPadding);
-	}
-
-	let result = ((slice[28] as u32) << 24) +
-		((slice[29] as u32) << 16) +
-		((slice[30] as u32) << 8) +
-		(slice[31] as u32);
-
-	Ok(-(result as i32))
-}
-
-pub fn as_u64(slice: &Hash) -> Result<u64, Error> {
-	if !slice[..24].iter().all(|x| *x == 0) {
-		return Err(Error::InvalidPadding);
-	}
-
-	let result =
-		((slice[24] as u64) << 56) +
-		((slice[25] as u64) << 48) +
-		((slice[26] as u64) << 40) +
-		((slice[27] as u64) << 32) +
-		((slice[28] as u64) << 24) +
-		((slice[29] as u64) << 16) +
-		((slice[30] as u64) << 8) +
-		 (slice[31] as u64);
-
-	Ok(result)
-}
-
-pub fn as_i64(slice: &Hash) -> Result<i64, Error> {
-	let is_negative = slice[0] & 0x80 != 0;
-
-	if !is_negative {
-		return Ok(as_u64(slice)? as i64);
-	}
-
-	// only negative path here
-
-	if !slice[1..28].iter().all(|x| *x == 0xff) {
-		return Err(Error::InvalidPadding);
-	}
-
-	let result =
-		((slice[24] as u64) << 56) +
-		((slice[25] as u64) << 48) +
-		((slice[26] as u64) << 40) +
-		((slice[27] as u64) << 32) +
-		((slice[28] as u64) << 24) +
-		((slice[29] as u64) << 16) +
-		((slice[30] as u64) << 8) +
-		 (slice[31] as u64);
-
-	Ok(-(result as i64))
-}
-
-pub fn as_bool(slice: &Hash) -> Result<bool, Error> {
-	if !slice[..31].iter().all(|x| *x == 0) {
-		return Err(Error::InvalidPadding);
-	}
-
-	Ok(slice[31] == 1)
 }

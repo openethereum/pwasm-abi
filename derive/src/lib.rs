@@ -7,6 +7,9 @@ extern crate pwasm_abi as abi;
 extern crate syn;
 #[macro_use]
 extern crate quote;
+extern crate tiny_keccak;
+extern crate byteorder;
+extern crate parity_hash;
 
 #[cfg(not(feature="std"))]
 extern crate alloc;
@@ -38,45 +41,6 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	generated.parse().expect("Failed to parse generated input")
 }
 
-fn item_to_signature(item: &Item) -> Option<abi::eth::NamedSignature> {
-	match *item {
-		Item::Signature(ref ident, ref method_sig) => {
-			let name = ident.as_ref().to_string();
-			Some(
-				abi::eth::NamedSignature::new(
-					name,
-					utils::parse_rust_signature(method_sig),
-				)
-			)
-		},
-		_ => None,
-	}
-}
-
-fn param_type_to_ident(param_type: &abi::eth::ParamType) -> quote::Tokens {
-	use abi::eth::ParamType;
-	match *param_type {
-		ParamType::U32 => quote! { ::pwasm_abi::eth::ParamType::U32 },
-		ParamType::I32 => quote! { ::pwasm_abi::eth::ParamType::U32 },
-		ParamType::U64 => quote! { ::pwasm_abi::eth::ParamType::U32 },
-		ParamType::I64 => quote! { ::pwasm_abi::eth::ParamType::U32 },
-		ParamType::Bool => quote! { ::pwasm_abi::eth::ParamType::Bool },
-		ParamType::U256 => quote! { ::pwasm_abi::eth::ParamType::U256 },
-		ParamType::H256 => quote! { ::pwasm_abi::eth::ParamType::H256 },
-		ParamType::Address => quote! { ::pwasm_abi::eth::ParamType::Address },
-		ParamType::Bytes => quote! { ::pwasm_abi::eth::ParamType::Bytes },
-		ParamType::Array(ref t) => {
-			let nested = param_type_to_ident(t.as_ref());
-			quote! {
-				::pwasm_abi::eth::ParamType::Array(::pwasm_abi::eth::ArrayRef::Static(&#nested))
-			}
-		},
-		ParamType::String => quote! { ::pwasm_abi::eth::ParamType::String },
-	}
-}
-
-
-
 fn impl_eth_dispatch(
 	item: syn::Item,
 	endpoint_name: String,
@@ -87,117 +51,79 @@ fn impl_eth_dispatch(
 		.client(client_name)
 		.endpoint(endpoint_name);
 
-	let signatures: Vec<abi::eth::NamedSignature> =
-		intf.items().iter().filter_map(item_to_signature).collect();
-
-	let (ctor_branch, ctor_signature) = {
-
-		let ctor_signature = signatures.iter().find(|ns| ns.name() == "ctor");
-
-		let ctor_branch = ctor_signature.map(|ns| {
-			let args_line = std::iter::repeat(
-				quote! { args.next().expect("Failed to fetch next argument").into() }
-			).take(ns.signature().params().len());
-
+	let ctor_branch = intf.constructor().map(
+		|signature| {
+			let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
 			quote! {
-				inner.ctor(
-					#(#args_line),*
+				let mut stream = ::pwasm_abi::eth::Stream::new(payload);
+				self.inner.constructor(
+					#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
 				);
 			}
-		});
-
-		let ctor_dispatch_effective = ctor_signature.map(|ns|
-			{
-				let param_types = ns.signature().params().iter().map(|p| {
-					let ident = param_type_to_ident(&p);
-					quote! { #ident }
-				});
-
-				quote! {
-					Some(::pwasm_abi::eth::Signature {
-						params: Cow::Borrowed(&[#(#param_types),*]),
-						result: None,
-					})
-				}
-			}
-		).unwrap_or(quote! { None });
-
-		(ctor_branch, ctor_dispatch_effective)
-	};
-
-	let hashed_signatures: Vec<abi::eth::HashSignature> =
-		signatures.clone().into_iter()
-			.map(From::from)
-			.collect();
-
-	let table_signatures = hashed_signatures.clone().into_iter().map(|hs| {
-		let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
-
-		let param_types = hs.signature().params().iter().map(|p| {
-			let ident = param_type_to_ident(&p);
-			quote! {
-				#ident
-			}
-		});
-
-		if let Some(result_type) = hs.signature().result() {
-			let return_type = param_type_to_ident(result_type);
-			quote! {
-				::pwasm_abi::eth::HashSignature {
-					hash: #hash_literal,
-					signature: ::pwasm_abi::eth::Signature {
-						params: Cow::Borrowed(&[#(#param_types),*]),
-						result: Some(#return_type),
-					}
-				}
-			}
-		} else {
-			quote! {
-				::pwasm_abi::eth::HashSignature {
-					hash: #hash_literal,
-					signature: ::pwasm_abi::eth::Signature {
-						params: Cow::Borrowed(&[#(#param_types),*]),
-						result: None,
-					}
-				}
-			}
 		}
-	});
+	);
+
+	let client_ctor = intf.constructor().map(
+		|signature| utils::produce_signature(
+			&signature.name,
+			&signature.method_sig,
+			quote! {
+				#![allow(unused_mut)]
+				#![allow(unused_variables)]
+				unimplemented!()
+			}
+		)
+	);
 
 	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
 		match *item {
-			Item::Signature(ref ident, ref method_sig)  => {
-				let signature_index = signatures.iter().position(|s| s.name() == ident.as_ref()).expect("signature with this name known to exist");
-				let hash = *&hashed_signatures[signature_index].hash();
-				let hash_literal = syn::Lit::Int(hash as u64, syn::IntTy::U32);
+			Item::Signature(ref signature)  => {
+				let hash_literal = syn::Lit::Int(signature.hash as u64, syn::IntTy::U32);
+				let argument_push: Vec<quote::Tokens> = utils::iter_signature(&signature.method_sig)
+					.map(|(pat, _)| quote! { sink.push(#pat); })
+					.collect();
+				let argument_count_literal = syn::Lit::Int(argument_push.len() as u64, syn::IntTy::Usize);
 
-				let args = method_sig.decl.inputs.iter().filter_map(|arg| {
-					match *arg {
-						syn::FnArg::Captured(ref pat, _) => Some(pat),
-						_ => None,
-					}
-				});
+				let result_instance = match signature.method_sig.decl.output {
+					syn::FunctionRetTy::Default => quote!{
+						let mut result = Vec::new();
+					},
+					syn::FunctionRetTy::Ty(_) => quote!{
+						let mut result = [0u8; 32];
+					},
+				};
 
-				let body_appendix = match method_sig.decl.output {
-					syn::FunctionRetTy::Default => quote!{;},
-					syn::FunctionRetTy::Ty(_) => quote!{.expect("abi should return value").into()},
+				let result_pop = match signature.method_sig.decl.output {
+					syn::FunctionRetTy::Default => None,
+					syn::FunctionRetTy::Ty(_) => Some(quote!{
+						let mut stream = ::pwasm_abi::eth::Stream::new(&result);
+						stream.pop().expect("failed decode call output")
+					}),
 				};
 
 				Some(utils::produce_signature(
-					ident,
-					method_sig,
+					&signature.name,
+					&signature.method_sig,
 					quote!{
-						let values: &[::pwasm_abi::eth::ValueType] = &[
-							#(#args.into()),*
-						];
-						self.table
-							.call(#hash_literal, values, |payload| {
-								call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut[])
-									.expect("call failed");
-								None
-							})
-							.expect("abi dispatch failed")
-							#body_appendix
+						#![allow(unused_mut)]
+						#![allow(unused_variables)]
+						let mut payload = Vec::with_capacity(4 + #argument_count_literal * 32);
+						payload.push((#hash_literal >> 24) as u8);
+						payload.push((#hash_literal >> 16) as u8);
+						payload.push((#hash_literal >> 8) as u8);
+						payload.push(#hash_literal as u8);
+
+						let mut sink = ::pwasm_abi::eth::Sink::new(#argument_count_literal);
+						#(#argument_push)*
+
+						sink.drain_to(&mut payload);
+
+						#result_instance
+
+						call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut result[..])
+							.expect("Call failed; todo: allow handling inside contracts");
+
+						#result_pop
 					}
 				))
 			},
@@ -215,53 +141,40 @@ fn impl_eth_dispatch(
 		}
 	}).collect();
 
-	let branches = hashed_signatures.into_iter()
-		.zip(signatures.into_iter())
-		.filter_map(|(hs, ns)| {
-			if ns.name() == "ctor" {
-				return None;
-			}
+	let branches: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
+		match *item {
+			Item::Signature(ref signature)  => {
+				let hash_literal = syn::Lit::Int(signature.hash as u64, syn::IntTy::U32);
+				let ident = &signature.name;
+				let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
 
-			let hash_literal = syn::Lit::Int(hs.hash() as u64, syn::IntTy::U32);
-			let ident: syn::Ident = ns.name().into();
-
-			let args_line = std::iter::repeat(
-				quote! { args.next().expect("Failed to fetch next argument").into() }
-			).take(hs.signature().params().len());
-
-			if let Some(_) = hs.signature().result() {
-				Some(quote! {
-					#hash_literal => {
-						Some(
+				if let Some(_) = signature.return_type {
+					Some(quote! {
+						#hash_literal => {
+							let mut stream = ::pwasm_abi::eth::Stream::new(method_payload);
+							let result = inner.#ident(
+								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
+							);
+							let mut sink = ::pwasm_abi::eth::Sink::new(1);
+							sink.push(result);
+							sink.finalize_panicking()
+						}
+					})
+				} else {
+					Some(quote! {
+						#hash_literal => {
+							let mut stream = ::pwasm_abi::eth::Stream::new(method_payload);
 							inner.#ident(
-								#(#args_line),*
-							).into()
-						)
-					}
-				})
-			} else {
-				Some(quote! {
-					#hash_literal => {
-						inner.#ident(
-							#(#args_line),*
-						);
-						None
-					}
-				})
-			}
+								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
+							);
+							Vec::new()
+						}
+					})
+				}
+			},
+			_ => None,
 		}
-	);
-
-
-	let dispatch_table = quote! {
-		{
-			const TABLE: &'static ::pwasm_abi::eth::Table = &::pwasm_abi::eth::Table {
-				inner: Cow::Borrowed(&[#(#table_signatures),*]),
-				fallback: #ctor_signature,
-			};
-			TABLE
-		}
-	};
+	}).collect();
 
 	let endpoint_ident: syn::Ident = intf.endpoint_name().clone().into();
 	let client_ident: syn::Ident = intf.client_name().clone().into();
@@ -273,19 +186,16 @@ fn impl_eth_dispatch(
 		pub struct #client_ident {
 			address: Address,
 			value: Option<U256>,
-			table: &'static ::pwasm_abi::eth::Table,
 		}
 
 		pub struct #endpoint_ident<T: #name_ident> {
 			inner: T,
-			table: &'static ::pwasm_abi::eth::Table,
 		}
 
 		impl #client_ident {
 			pub fn new(address: Address) -> Self {
 				#client_ident {
 					address: address,
-					table: #dispatch_table,
 					value: None,
 				}
 			}
@@ -297,6 +207,7 @@ fn impl_eth_dispatch(
 		}
 
 		impl #name_ident for #client_ident {
+			#client_ctor
 			#(#calls)*
 		}
 
@@ -304,7 +215,6 @@ fn impl_eth_dispatch(
 			pub fn new(inner: T) -> Self {
 				#endpoint_ident {
 					inner: inner,
-					table: #dispatch_table,
 				}
 			}
 
@@ -314,24 +224,30 @@ fn impl_eth_dispatch(
 		}
 
 		impl<T: #name_ident> ::pwasm_abi::eth::EndpointInterface for #endpoint_ident<T> {
+			#[allow(unused_mut)]
+			#[allow(unused_variables)]
 			fn dispatch(&mut self, payload: &[u8]) -> Vec<u8> {
 				let inner = &mut self.inner;
-				self.table.dispatch(payload, |method_id, args| {
-					let mut args = args.into_iter();
-					match method_id {
-				 		#(#branches),*,
-						_ => panic!("Invalid method signature"),
-					}
-				}).expect("Failed abi dispatch")
+				if payload.len() < 4 {
+					panic!("Invalid abi invoke");
+				}
+				let method_id = ((payload[0] as u32) << 24)
+					+ ((payload[1] as u32) << 16)
+					+ ((payload[2] as u32) << 8)
+					+ (payload[3] as u32);
+
+				let method_payload = &payload[4..];
+
+				match method_id {
+					#(#branches),*,
+					_ => panic!("Invalid method signature"),
+				}
 			}
 
 			#[allow(unused_variables)]
+			#[allow(unused_mut)]
 			fn dispatch_ctor(&mut self, payload: &[u8]) {
-				let inner = &mut self.inner;
-				self.table.fallback_dispatch(payload, |args| {
-					let mut args = args.into_iter();
-					#ctor_branch
-				}).expect("Failed fallback abi dispatch");
+				#ctor_branch
 			}
 		}
 	}
