@@ -23,11 +23,11 @@ impl AbiType for u32 {
 		Ok(result)
 	}
 
-	fn is_fixed() -> bool { true }
-
 	fn encode(self, sink: &mut Sink) {
 		sink.preamble_mut().extend_from_slice(&util::pad_u32(self)[..]);
 	}
+
+	const IS_FIXED: bool = true;
 }
 
 impl AbiType for u64 {
@@ -53,11 +53,11 @@ impl AbiType for u64 {
 		Ok(result)
 	}
 
-	fn is_fixed() -> bool { true }
-
 	fn encode(self, sink: &mut Sink) {
 		sink.preamble_mut().extend_from_slice(&util::pad_u64(self)[..]);
 	}
+
+	const IS_FIXED: bool = true;
 }
 
 impl AbiType for Vec<u8> {
@@ -71,8 +71,6 @@ impl AbiType for Vec<u8> {
 		Ok(result)
 	}
 
-	fn is_fixed() -> bool { false }
-
 	fn encode(self, sink: &mut Sink) {
 		let mut val = self;
 		let len = val.len();
@@ -82,6 +80,8 @@ impl AbiType for Vec<u8> {
 		sink.push(len as u32);
 		sink.preamble_mut().extend_from_slice(&val[..]);
 	}
+
+	const IS_FIXED: bool = false;
 }
 
 impl AbiType for bool {
@@ -94,11 +94,11 @@ impl AbiType for bool {
 		}
 	}
 
-	fn is_fixed() -> bool { true }
-
 	fn encode(self, sink: &mut Sink) {
 		sink.preamble_mut().extend_from_slice(&util::pad_u32(match self { true => 1, false => 0})[..]);
 	}
+
+	const IS_FIXED: bool = true;
 }
 
 impl AbiType for U256 {
@@ -116,7 +116,7 @@ impl AbiType for U256 {
 		self.to_big_endian(&mut sink.preamble_mut()[tail..tail+32]);
 	}
 
-	fn is_fixed() -> bool { true }
+	const IS_FIXED: bool = true;
 }
 
 impl AbiType for Address {
@@ -134,7 +134,7 @@ impl AbiType for Address {
 		sink.preamble_mut()[tail+12..tail+32].copy_from_slice(self.as_ref());
 	}
 
-	fn is_fixed() -> bool { true }
+	const IS_FIXED: bool = true;
 }
 
 impl<T: AbiType> AbiType for Vec<T> {
@@ -147,8 +147,6 @@ impl<T: AbiType> AbiType for Vec<T> {
 		Ok(result)
 	}
 
-	fn is_fixed() -> bool { false }
-
 	fn encode(self, sink: &mut Sink) {
 		sink.push(self.len() as u32);
 
@@ -156,6 +154,8 @@ impl<T: AbiType> AbiType for Vec<T> {
 			sink.push(member);
 		}
 	}
+
+	const IS_FIXED: bool = false;
 }
 
 impl AbiType for i32 {
@@ -184,13 +184,12 @@ impl AbiType for i32 {
 		Ok(result as i32)
 	}
 
-	fn is_fixed() -> bool { true }
-
 	fn encode(self, sink: &mut Sink) {
 		sink.preamble_mut().extend_from_slice(&util::pad_i32(self)[..]);
 	}
-}
 
+	const IS_FIXED: bool = true;
+}
 
 impl AbiType for i64 {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
@@ -223,9 +222,9 @@ impl AbiType for i64 {
 		Ok(result as i64)
 	}
 
-	fn is_fixed() -> bool { true }
-
 	fn encode(self, sink: &mut Sink) {
 		sink.preamble_mut().extend_from_slice(&util::pad_i64(self)[..]);
 	}
+
+	const IS_FIXED: bool = true;
 }
