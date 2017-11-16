@@ -172,7 +172,7 @@ impl AbiType for i32 {
 		let slice = &stream.payload()[previous_position..stream.position()];
 
 		// only negative path here
-		if !slice[1..28].iter().all(|x| *x == 0xff) {
+		if !slice[0..28].iter().all(|x| *x == 0xff) {
 			return Err(Error::InvalidPadding);
 		}
 
@@ -206,7 +206,7 @@ impl AbiType for i64 {
 		let slice = &stream.payload()[previous_position..stream.position()];
 
 		// only negative path here
-		if !slice[1..24].iter().all(|x| *x == 0xff) {
+		if !slice[0..24].iter().all(|x| *x == 0xff) {
 			return Err(Error::InvalidPadding);
 		}
 

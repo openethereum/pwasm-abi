@@ -184,3 +184,19 @@ fn negative_i32_max() {
 	let value: i32 = stream.pop().expect("x failed to pop");
 	assert_eq!(value, x);
 }
+
+#[test]
+fn padding_test_i32() {
+	let mut sample = [0xff; 32];
+	sample[0] = 0x80;
+	let mut stream = ::eth::Stream::new(&sample);
+	assert_eq!(stream.pop::<i32>().unwrap_err(), Error::InvalidPadding);
+}
+
+#[test]
+fn padding_test_i64() {
+	let mut sample = [0xff; 32];
+	sample[0] = 0x80;
+	let mut stream = ::eth::Stream::new(&sample);
+	assert_eq!(stream.pop::<i64>().unwrap_err(), Error::InvalidPadding);
+}

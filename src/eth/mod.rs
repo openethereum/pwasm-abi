@@ -15,7 +15,7 @@ pub use self::stream::Stream;
 pub use self::sink::Sink;
 
 /// Error for decoding rust types from stream
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
 	/// Invalid bool for provided input
 	InvalidBool,
