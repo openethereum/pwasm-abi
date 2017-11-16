@@ -39,8 +39,8 @@ pub trait AbiType : Sized {
 	/// Push type to data sink
 	fn encode(self, sink: &mut Sink);
 
-	/// Return whether type has fixed length or not
-	fn is_fixed() -> bool;
+	/// Whether type has fixed length or not
+	const IS_FIXED: bool;
 }
 
 /// Endpoint interface for contracts

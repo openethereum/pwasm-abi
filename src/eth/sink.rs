@@ -24,7 +24,7 @@ impl Sink {
 
 	/// Consume `val` to the Sink
 	pub fn push<T: AbiType>(&mut self, val: T) {
-		if T::is_fixed() {
+		if T::IS_FIXED {
 			val.encode(self)
 		} else {
 			let mut nested_sink = Sink::new(1);

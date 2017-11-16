@@ -21,7 +21,7 @@ impl<'a> Stream<'a> {
 
 	/// Pop next argument of known type
 	pub fn pop<T: AbiType>(&mut self) -> Result<T, Error> {
-		if T::is_fixed() {
+		if T::IS_FIXED {
 			T::decode(self)
 		} else {
 			let offset = u32::decode(self)?;
