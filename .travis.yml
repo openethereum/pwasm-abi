@@ -1,9 +1,21 @@
 dist: trusty
 sudo: required
 language:
-  - rust
-
+- rust
 script:
-  - cargo build --release --verbose
-  - cargo test --verbose --features std
-  - cargo test --verbose --manifest-path=tests/Cargo.toml --features=pwasm-std/std
+- cargo build --release --verbose
+- cargo test --verbose --features std
+- cargo test --verbose --manifest-path=tests/Cargo.toml --features=pwasm-std/std
+
+after_success: |
+  [ $TRAVIS_BRANCH = master ] &&
+  [ $TRAVIS_PULL_REQUEST = false ] &&
+  cargo doc --all --no-deps &&
+  echo '<meta http-equiv=refresh content=0;url=pwasm_abi/index.html>' > target/doc/index.html &&
+  pip install --user ghp-import &&
+  /home/travis/.local/bin/ghp-import -n target/doc &&
+  git push -fq https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+
+env:
+  global:
+    secure: h94IWY0I/5DYK0w+7yTh4c7VTd4LJSVHrPMm9bXKUXjTbgQ8O02hN2yYKGMADrydo5wI0TJNY40/nOXQg7C0lwIvKsjzda9joLgs+8RvSJomEm1eRKdLMNjKevuIeqGCZAfrtdVVcvRjRBvH03t9IKkOPi5Su0XgNKhX9v0N0mb0BoSKMpNo4n2E7taUBW3fQvPjnWHbblheBU6ftqm6gctIDKhgbOvFDS0I87B8nbq37dhLh5iMVNM+qJz+DwqagzutjBQG8biD4cKO6jpmJJkjcwxGWrIZHhaSr/icNhxo4DJD7c6zwnKUukFrKgtaWH5v369qYL/6zp/o9fw1meKyzAOUSebHR4UXi2WtNmsQjHdNlRI2/Fo3QDQs5Cc3Kq3b6NbmyKIZ8wwn0DFBJbbjKDGqWGrUexqJJKZGPgHCJSseZ+goAEmjVGCcpCAQnTgJYMw9JlnpedCxobvolsRRip8eQp57UFslWk2e0mnYZfnNsVBIBxxAUUNgJs8lDhhRTSjm7uahl3T4N5gAF9rsdhWEu/dNB/nUD9xyvD71x2YV0Vf2r/k9J4a084ds+ABaI3MQ/6d/Szb6VVo7UOROgzYqQFiNXsBkXdKTF74CxjoJVRPDThtVrJ5LLlTCqOfU8nc0d9LhhUV/ihJF4oPgUZJEcOSQmhmUtI5ZiNQ=

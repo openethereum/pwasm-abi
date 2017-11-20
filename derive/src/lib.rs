@@ -1,3 +1,4 @@
+//! Ethereum (Solidity) derivation for rust contracts (compiled to wasm or otherwise)
 #![feature(alloc)]
 #![feature(proc_macro)]
 #![recursion_limit="128"]
@@ -22,6 +23,13 @@ use proc_macro::TokenStream;
 
 use items::Item;
 
+/// Derive abi for given trait. Should provide two arguments - dispatch structure name and
+/// client structure name.
+///
+/// # Example
+///
+/// #[eth_abi(Endpoint, Client)]
+/// trait Contract { }
 #[proc_macro_attribute]
 pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	let args_str = args.to_string();
