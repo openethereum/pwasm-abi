@@ -1,6 +1,10 @@
 # pwasm-abi
 Parity WASM Abi (Legacy and new)
 
+[![Build Status](https://travis-ci.org/paritytech/pwasm-abi.svg?branch=master)](https://travis-ci.org/paritytech/pwasm-abi)
+
+[Documentation](https://paritytech.github.io/pwasm-abi/pwasm_abi/)
+
 # Add dependency
 
 ```toml
