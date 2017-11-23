@@ -14,10 +14,15 @@ use core::cell::RefCell;
 #[cfg(test)]
 use std::cell::RefCell;
 
+extern crate pwasm_std;
+#[macro_use]
+extern crate pwasm_test;
 extern crate pwasm_abi;
 extern crate parity_hash;
 extern crate pwasm_abi_derive;
 extern crate bigint;
+
+use pwasm_test::{ExternalBuilder, ExternalInstance, get_external};
 
 mod erc20;
 
@@ -25,7 +30,8 @@ use pwasm_abi_derive::eth_abi;
 use pwasm_abi::eth::EndpointInterface;
 
 use bigint::U256;
-use parity_hash::{H256, Address};
+use parity_hash::{Address};
+
 
 #[eth_abi(Endpoint, Client)]
 pub trait TestContract {
@@ -65,16 +71,6 @@ const PAYLOAD_SAMPLE_3: &[u8] = &[
 
 #[cfg(test)]
 thread_local!(pub static LAST_CALL: RefCell<Vec<u8>> = RefCell::new(Vec::new()));
-
-#[cfg(test)]
-fn call(_address: &Address, _value: U256, input: &[u8], _result: &mut [u8]) -> Result<(), ()> {
-	LAST_CALL.with(|v| { *v.borrow_mut() = input.to_vec(); });
-	Ok(())
-}
-
-#[cfg(test)]
-fn log(_topics: &[H256], _data: &[u8]) {
-}
 
 #[test]
 fn baz_dispatch() {
@@ -182,12 +178,10 @@ fn boo_dispatch() {
 	assert!(!endpoint.inner.called_wrong, "wrong method was invoked");
 }
 
-#[test]
-fn baz_call() {
-	let mut client = Client::new(Address::zero());
-	client.baz(69, true);
-	LAST_CALL.with(|v| {
-		let val: &[u8] = &v.borrow()[..];
-		assert_eq!(val, PAYLOAD_SAMPLE_1);
-	});
-}
+test_with_external!(
+	ExternalBuilder::new().build(),
+	baz_call {
+		let mut client = Client::new(Address::zero());
+		client.baz(69, true);
+		assert_eq!(get_external::<ExternalInstance>().calls()[0].input.as_ref(), PAYLOAD_SAMPLE_1);
+});

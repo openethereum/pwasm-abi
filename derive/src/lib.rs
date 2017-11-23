@@ -128,7 +128,7 @@ fn impl_eth_dispatch(
 
 						#result_instance
 
-						call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut result[..])
+						::pwasm_std::ext::call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut result[..])
 							.expect("Call failed; todo: allow handling inside contracts");
 
 						#result_pop
