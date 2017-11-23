@@ -186,7 +186,7 @@ impl quote::ToTokens for Item {
 								#(sink.push(#data_pats));*;
 								let payload = sink.finalize_panicking();
 
-								log(topics, &payload);
+								::pwasm_std::ext::log(topics, &payload);
 							}
 						}
 					)

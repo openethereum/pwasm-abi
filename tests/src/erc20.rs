@@ -8,7 +8,6 @@ mod contract {
 	use pwasm_abi_derive::eth_abi;
 	use parity_hash::Address;
 	use bigint::U256;
-	use {call, log};
 	use std::collections::HashMap;
 
 	#[eth_abi(Endpoint, Client)]

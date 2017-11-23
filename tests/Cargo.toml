@@ -4,7 +4,8 @@ version = "0.0.0"
 authors = ["NikVolf <nikvolf@gmail.com>"]
 
 [dependencies]
-pwasm-std = { git = "https://github.com/paritytech/pwasm-std", default-features=false}
+pwasm-std = "0.1"
+pwasm-test = { git = "https://github.com/paritytech/pwasm-test" }
 pwasm-abi = { path = "..", default-features=false }
 pwasm-abi-derive = { path = "../derive" }
 bigint = "4"
