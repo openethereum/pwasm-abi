@@ -191,6 +191,13 @@ fn impl_eth_dispatch(
 	let client_ident: syn::Ident = intf.client_name().clone().into();
 	let name_ident: syn::Ident = intf.name().clone().into();
 
+	{
+		let json: json::Abi = (&intf).into();
+		// todo: use env var for proper cargo target dir
+		let mut f = ::std::fs::File::create(&format!("./target/{}.json", intf.name())).expect("failed to create json file");
+		serde_json::to_writer_pretty(&mut f, &json).expect("failed to write json");
+	}
+
 	quote! {
 		#intf
 
