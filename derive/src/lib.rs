@@ -6,17 +6,20 @@
 extern crate proc_macro;
 extern crate pwasm_abi as abi;
 extern crate syn;
-#[macro_use]
-extern crate quote;
+#[macro_use] extern crate quote;
 extern crate tiny_keccak;
 extern crate byteorder;
 extern crate parity_hash;
+extern crate serde;
+extern crate serde_json;
+#[macro_use] extern crate serde_derive;
 
 #[cfg(not(feature="std"))]
 extern crate alloc;
 
 mod items;
 mod utils;
+mod json;
 
 use alloc::vec::Vec;
 use proc_macro::TokenStream;
