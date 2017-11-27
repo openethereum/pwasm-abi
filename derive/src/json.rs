@@ -19,6 +19,7 @@ pub struct Argument {
 
 #[derive(Serialize, Debug)]
 pub struct ConstructorEntry {
+    #[serde(rename = "inputs")]
     pub arguments: Vec<Argument>,
 }
 
