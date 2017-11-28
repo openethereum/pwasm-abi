@@ -52,6 +52,20 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	generated.parse().expect("Failed to parse generated input")
 }
 
+fn create_json(name: &str) -> ::std::fs::File {
+	use std::fs;
+	use std::path::PathBuf;
+	use std::env;
+
+	let mut target = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".to_owned()));
+	target.push("target");
+	target.push("json");
+	fs::create_dir_all(&target).expect("failed to create json directory");
+	target.push(&format!("{}.json", name));
+
+	fs::File::create(target).expect("failed to write json")
+}
+
 fn impl_eth_dispatch(
 	item: syn::Item,
 	endpoint_name: String,
@@ -192,10 +206,9 @@ fn impl_eth_dispatch(
 	let name_ident: syn::Ident = intf.name().clone().into();
 
 	{
-		let json: json::Abi = (&intf).into();
-		// todo: use env var for proper cargo target dir
-		let mut f = ::std::fs::File::create(&format!("./target/{}.json", intf.name())).expect("failed to create json file");
-		serde_json::to_writer_pretty(&mut f, &json).expect("failed to write json");
+		let mut f = create_json(intf.name());
+		let abi: json::Abi = (&intf).into();
+		serde_json::to_writer_pretty(&mut f, &abi).expect("failed to write json");
 	}
 
 	quote! {
