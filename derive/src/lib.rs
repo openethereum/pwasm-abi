@@ -6,17 +6,20 @@
 extern crate proc_macro;
 extern crate pwasm_abi as abi;
 extern crate syn;
-#[macro_use]
-extern crate quote;
+#[macro_use] extern crate quote;
 extern crate tiny_keccak;
 extern crate byteorder;
 extern crate parity_hash;
+extern crate serde;
+extern crate serde_json;
+#[macro_use] extern crate serde_derive;
 
 #[cfg(not(feature="std"))]
 extern crate alloc;
 
 mod items;
 mod utils;
+mod json;
 
 use alloc::vec::Vec;
 use proc_macro::TokenStream;
@@ -47,6 +50,20 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	let generated = impl_eth_dispatch(ast, endpoint_arg, client_arg);
 
 	generated.parse().expect("Failed to parse generated input")
+}
+
+fn create_json(name: &str) -> ::std::fs::File {
+	use std::fs;
+	use std::path::PathBuf;
+	use std::env;
+
+	let mut target = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".to_owned()));
+	target.push("target");
+	target.push("json");
+	fs::create_dir_all(&target).expect("failed to create json directory");
+	target.push(&format!("{}.json", name));
+
+	fs::File::create(target).expect("failed to write json")
 }
 
 fn impl_eth_dispatch(
@@ -187,6 +204,12 @@ fn impl_eth_dispatch(
 	let endpoint_ident: syn::Ident = intf.endpoint_name().clone().into();
 	let client_ident: syn::Ident = intf.client_name().clone().into();
 	let name_ident: syn::Ident = intf.name().clone().into();
+
+	{
+		let mut f = create_json(intf.name());
+		let abi: json::Abi = (&intf).into();
+		serde_json::to_writer_pretty(&mut f, &abi).expect("failed to write json");
+	}
 
 	quote! {
 		#intf

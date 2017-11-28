@@ -98,6 +98,12 @@ pub fn push_canonical(target: &mut String, ty: &syn::Ty) {
 	};
 }
 
+pub fn canonical_ty(ty: &syn::Ty) -> String {
+	let mut result = String::new();
+	push_canonical(&mut result, ty);
+	result
+}
+
 pub fn canonical(name: &syn::Ident, method_sig: &syn::MethodSig) -> String {
 	let mut s = String::new();
 	s.push_str(&name.to_string());
@@ -108,7 +114,6 @@ pub fn canonical(name: &syn::Ident, method_sig: &syn::MethodSig) -> String {
 		if i != total_len-2 { s.push(','); }
 	}
 	s.push(')');
-
 	s
 }
 
