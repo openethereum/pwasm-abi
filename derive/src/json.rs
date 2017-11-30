@@ -8,6 +8,7 @@ pub struct FunctionEntry {
     #[serde(rename = "inputs")]
     pub arguments: Vec<Argument>,
     pub outputs: Vec<Argument>,
+    pub constant: bool,
 }
 
 #[derive(Serialize, Debug)]
@@ -116,6 +117,7 @@ impl<'a> From<&'a items::Signature> for FunctionEntry {
                 .iter()
                 .map(|ty| Argument { name: "returnValue".to_owned(), type_: utils::canonical_ty(ty) })
                 .collect(),
+            constant: item.is_static,
         }
     }
 }
