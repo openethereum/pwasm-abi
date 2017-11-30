@@ -24,7 +24,7 @@ pub struct Signature {
 	pub hash: u32,
 	pub arguments: Vec<(syn::Pat, syn::Ty)>,
 	pub return_type: Option<syn::Ty>,
-	pub is_static: bool,
+	pub is_constant: bool,
 }
 
 pub enum Item {
@@ -99,7 +99,7 @@ impl Interface {
 	}
 }
 
-fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_static: bool) -> Signature {
+fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_constant: bool) -> Signature {
 	let arguments: Vec<(syn::Pat, syn::Ty)> = utils::iter_signature(&method_sig).collect();
 	let canonical = utils::canonical(&ident, &method_sig);
 	let return_type: Option<syn::Ty> = match method_sig.decl.output {
@@ -115,7 +115,7 @@ fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_static: bool
 		canonical: canonical,
 		hash: hash,
 		return_type: return_type,
-		is_static: is_static,
+		is_constant: is_constant,
 	}
 }
 

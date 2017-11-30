@@ -117,7 +117,7 @@ impl<'a> From<&'a items::Signature> for FunctionEntry {
                 .iter()
                 .map(|ty| Argument { name: "returnValue".to_owned(), type_: utils::canonical_ty(ty) })
                 .collect(),
-            constant: item.is_static,
+            constant: item.is_constant,
         }
     }
 }
