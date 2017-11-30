@@ -24,6 +24,7 @@ pub struct Signature {
 	pub hash: u32,
 	pub arguments: Vec<(syn::Pat, syn::Ty)>,
 	pub return_type: Option<syn::Ty>,
+	pub is_constant: bool,
 }
 
 pub enum Item {
@@ -98,7 +99,7 @@ impl Interface {
 	}
 }
 
-fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig) -> Signature {
+fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_constant: bool) -> Signature {
 	let arguments: Vec<(syn::Pat, syn::Ty)> = utils::iter_signature(&method_sig).collect();
 	let canonical = utils::canonical(&ident, &method_sig);
 	let return_type: Option<syn::Ty> = match method_sig.decl.output {
@@ -114,7 +115,15 @@ fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig) -> Signature {
 		canonical: canonical,
 		hash: hash,
 		return_type: return_type,
+		is_constant: is_constant,
 	}
+}
+
+fn has_attribute(attrs: &[syn::Attribute], name: &str) -> bool {
+	attrs.iter().any(|a| match a.value {
+		syn::MetaItem::Word(ref ident) => ident.as_ref() == name,
+		_ => false
+	})
 }
 
 impl Item {
@@ -124,10 +133,7 @@ impl Item {
 		let attrs = source.attrs;
 		match node {
 			syn::TraitItemKind::Method(method_sig, None) => {
-				if attrs.iter().any(|a| match a.value {
-					syn::MetaItem::Word(ref ident) => ident.as_ref() == "event" ,
-					_ => false
-				}) {
+				if has_attribute(&attrs, "event") {
 					let (indexed, non_indexed) = utils::iter_signature(&method_sig)
 						.partition(|&(ref pat, _)| quote! { #pat }.to_string().starts_with("indexed_"));
 					let canonical = utils::canonical(&ident, &method_sig);
@@ -142,7 +148,9 @@ impl Item {
 
 					Item::Event(event)
 				} else {
-					Item::Signature(into_signature(ident, method_sig))
+					Item::Signature(
+						into_signature(ident, method_sig, has_attribute(&attrs, "constant"))
+					)
 				}
 			},
 			_ => {
