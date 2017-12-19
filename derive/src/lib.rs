@@ -145,7 +145,7 @@ fn impl_eth_dispatch(
 
 						#result_instance
 
-						::pwasm_std::ext::call(&self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut result[..])
+						::pwasm_ethereum::ext::call(&self.address, self.value.clone().unwrap_or(::bigint::U256::zero()), &payload, &mut result[..])
 							.expect("Call failed; todo: allow handling inside contracts");
 
 						#result_pop
@@ -215,8 +215,8 @@ fn impl_eth_dispatch(
 		#intf
 
 		pub struct #client_ident {
-			address: Address,
-			value: Option<U256>,
+			address: ::parity_hash::Address,
+			value: Option<::bigint::U256>,
 		}
 
 		pub struct #endpoint_ident<T: #name_ident> {
@@ -224,14 +224,14 @@ fn impl_eth_dispatch(
 		}
 
 		impl #client_ident {
-			pub fn new(address: Address) -> Self {
+			pub fn new(address: ::parity_hash::Address) -> Self {
 				#client_ident {
 					address: address,
 					value: None,
 				}
 			}
 
-			pub fn value(mut self, val: U256) -> Self {
+			pub fn value(mut self, val: ::bigint::U256) -> Self {
 				self.value = Some(val);
 				self
 			}

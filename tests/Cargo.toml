@@ -4,9 +4,10 @@ version = "0.0.0"
 authors = ["NikVolf <nikvolf@gmail.com>"]
 
 [dependencies]
-pwasm-std = "0.2"
+pwasm-std = "0.3"
 pwasm-test = { git = "https://github.com/paritytech/pwasm-test" }
 pwasm-abi = { path = "..", default-features=false }
 pwasm-abi-derive = { path = "../derive" }
+pwasm-ethereum = { git = "https://github.com/nikvolf/pwasm-ethereum" }
 bigint = "4"
 parity-hash = "1"

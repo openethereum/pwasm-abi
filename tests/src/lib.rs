@@ -9,12 +9,8 @@ extern crate alloc;
 #[cfg(not(test))]
 use alloc::vec::Vec;
 
-#[cfg(not(test))]
-use core::cell::RefCell;
-#[cfg(test)]
-use std::cell::RefCell;
-
 extern crate pwasm_std;
+extern crate pwasm_ethereum;
 #[macro_use]
 extern crate pwasm_test;
 extern crate pwasm_abi;
@@ -30,7 +26,7 @@ use pwasm_abi_derive::eth_abi;
 use pwasm_abi::eth::EndpointInterface;
 
 use bigint::U256;
-use parity_hash::{Address};
+use parity_hash::Address;
 
 
 #[eth_abi(Endpoint, Client)]
@@ -68,9 +64,6 @@ const PAYLOAD_SAMPLE_3: &[u8] = &[
 	0x5d, 0xda, 0xb4, 0xd4,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x45,
 ];
-
-#[cfg(test)]
-thread_local!(pub static LAST_CALL: RefCell<Vec<u8>> = RefCell::new(Vec::new()));
 
 #[test]
 fn baz_dispatch() {
