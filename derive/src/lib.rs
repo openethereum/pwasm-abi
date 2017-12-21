@@ -145,7 +145,7 @@ fn impl_eth_dispatch(
 
 						#result_instance
 
-						::pwasm_ethereum::ext::call(self.gas.unwrap_or(0u64), &self.address, self.value.clone().unwrap_or(::bigint::U256::zero()), &payload, &mut result[..])
+						::pwasm_ethereum::ext::call(self.gas.unwrap_or(::pwasm_ethereum::ext::gas_limit().into()), &self.address, self.value.clone().unwrap_or(::bigint::U256::zero()), &payload, &mut result[..])
 							.expect("Call failed; todo: allow handling inside contracts");
 
 						#result_pop
