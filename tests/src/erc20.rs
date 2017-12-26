@@ -4,6 +4,7 @@ use pwasm_abi::eth::EndpointInterface;
 
 mod contract {
 	#![allow(non_snake_case)]
+	#![allow(dead_code)]
 
 	use pwasm_abi_derive::eth_abi;
 	use parity_hash::Address;
