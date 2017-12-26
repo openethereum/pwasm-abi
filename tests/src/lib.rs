@@ -180,17 +180,20 @@ fn dispatch_empty_abi() {
 	}
 
 	struct EmptyContractInstance {
+		pub called: bool
 	}
 
 	impl EmptyContract for EmptyContractInstance {
 		fn constructor(&mut self, _p1: bool) {
+			self.called = true;
 		}
 	}
 
-	let mut endpoint = EmptyEndpoint::new(EmptyContractInstance{});
+	let mut endpoint = EmptyEndpoint::new(EmptyContractInstance{called: false});
 	endpoint.dispatch_ctor(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]);
+	assert!(endpoint.inner.called);
 }
 
 test_with_external!(
