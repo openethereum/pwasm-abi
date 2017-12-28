@@ -277,7 +277,7 @@ fn impl_eth_dispatch(
 				let method_payload = &payload[4..];
 
 				match method_id {
-					#(#branches),*,
+					#(#branches,)*
 					_ => panic!("Invalid method signature"),
 				}
 			}

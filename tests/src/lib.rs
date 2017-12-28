@@ -171,6 +171,34 @@ fn boo_dispatch() {
 	assert!(!endpoint.inner.called_wrong, "wrong method was invoked");
 }
 
+#[allow(dead_code)]
+#[test]
+fn dispatch_empty_abi() {
+	#[eth_abi(EmptyEndpoint, _EmptyClient)]
+	trait EmptyContract {
+		fn constructor(&mut self, _p: bool);
+	}
+
+	struct EmptyContractInstance {
+		pub called: bool,
+		pub p: bool
+	}
+
+	impl EmptyContract for EmptyContractInstance {
+		fn constructor(&mut self, p1: bool) {
+			self.called = true;
+			self.p = p1;
+		}
+	}
+
+	let mut endpoint = EmptyEndpoint::new(EmptyContractInstance{called: false, p: false});
+	endpoint.dispatch_ctor(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]);
+	assert!(endpoint.inner.called);
+	assert!(endpoint.inner.p);
+}
+
 test_with_external!(
 	ExternalBuilder::new().build(),
 	baz_call {
