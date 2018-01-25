@@ -26,30 +26,58 @@ use proc_macro::TokenStream;
 
 use items::Item;
 
-/// Derive abi for given trait. Should provide two arguments - dispatch structure name and
-/// client structure name.
+fn parse_args(args: TokenStream) -> Vec<String> {
+	args.to_string()
+		.split(',')
+		.map(|w| w.trim_matches(&['(', ')', '"', ' '][..]).to_string())
+		.collect()
+}
+
+/// Derive abi for given trait. Should provide one or two arguments:
+/// dispatch structure name and client structure name.
 ///
 /// # Example
 ///
-/// #[eth_abi(Endpoint, Client)]
+/// #[eth_abi(Endpoint)]
 /// trait Contract { }
+///
+/// # Example
+///
+/// #[eth_abi(Endpoint2, Client2)]
+/// trait Contract2 { }
 #[proc_macro_attribute]
 pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
-	let args_str = args.to_string();
-	let mut args: Vec<String> = args_str
-		.split(',')
-		.map(|w| w.trim_matches(&['(', ')', '"', ' '][..]).to_string())
-		.collect();
-
-	let client_arg = args.pop().expect("Should be 2 elements in attribute");
-	let endpoint_arg = args.pop().expect("Should be 2 elements in attribute");
-
 	let source = input.to_string();
 	let ast = syn::parse_item(&source).expect("Failed to parse derive input");
 
-	let generated = impl_eth_dispatch(ast, endpoint_arg, client_arg);
+	let args = parse_args(args);
+	let endpoint_name = args.get(0).expect("Failed to parse an endpoint name argument");
+	let intf = items::Interface::from_item(ast);
 
-	generated.parse().expect("Failed to parse generated input")
+	match args.len() {
+		1 => {
+			let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
+			let generated = quote! {
+				#intf
+				#endpoint
+			};
+			generated.parse().expect("Failed to parse generated input")
+		}
+		2 => {
+			let client_name = args.get(1).expect("Failed to parse an client name argument");
+			let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
+			let client = generate_eth_client(client_name, &intf);
+			let generated = quote! {
+				#intf
+				#endpoint
+				#client
+			};
+			generated.parse().expect("Failed to parse generated input")
+		}
+		len => {
+			panic!("eth_abi marco takes one or two comma-separated arguments, passed {}", len);
+		}
+	}
 }
 
 fn create_json(name: &str) -> ::std::fs::File {
@@ -66,28 +94,7 @@ fn create_json(name: &str) -> ::std::fs::File {
 	fs::File::create(target).expect("failed to write json")
 }
 
-fn impl_eth_dispatch(
-	item: syn::Item,
-	endpoint_name: String,
-	client_name: String,
-) -> quote::Tokens {
-
-	let intf = items::Interface::from_item(item)
-		.client(client_name)
-		.endpoint(endpoint_name);
-
-	let ctor_branch = intf.constructor().map(
-		|signature| {
-			let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
-			quote! {
-				let mut stream = ::pwasm_abi::eth::Stream::new(payload);
-				self.inner.constructor(
-					#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
-				);
-			}
-		}
-	);
-
+fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tokens {
 	let client_ctor = intf.constructor().map(
 		|signature| utils::produce_signature(
 			&signature.name,
@@ -166,6 +173,56 @@ fn impl_eth_dispatch(
 		}
 	}).collect();
 
+	let client_ident: syn::Ident = client_name.to_string().into();
+	let name_ident: syn::Ident = intf.name().clone().into();
+
+	quote! {
+		pub struct #client_ident {
+			gas: Option<u64>,
+			address: ::parity_hash::Address,
+			value: Option<::bigint::U256>,
+		}
+
+		impl #client_ident {
+			pub fn new(address: ::parity_hash::Address) -> Self {
+				#client_ident {
+					gas: None,
+					address: address,
+					value: None,
+				}
+			}
+
+			pub fn gas(mut self, gas: u64) -> Self {
+				self.gas = Some(gas);
+				self
+			}
+
+			pub fn value(mut self, val: ::bigint::U256) -> Self {
+				self.value = Some(val);
+				self
+			}
+		}
+
+		impl #name_ident for #client_ident {
+			#client_ctor
+			#(#calls)*
+		}
+	}
+}
+
+fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote::Tokens {
+	let ctor_branch = intf.constructor().map(
+		|signature| {
+			let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
+			quote! {
+				let mut stream = ::pwasm_abi::eth::Stream::new(payload);
+				self.inner.constructor(
+					#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
+				);
+			}
+		}
+	);
+
 	let branches: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
 		match *item {
 			Item::Signature(ref signature)  => {
@@ -201,52 +258,18 @@ fn impl_eth_dispatch(
 		}
 	}).collect();
 
-	let endpoint_ident: syn::Ident = intf.endpoint_name().clone().into();
-	let client_ident: syn::Ident = intf.client_name().clone().into();
+	let endpoint_ident: syn::Ident = endpoint_name.to_string().into();
 	let name_ident: syn::Ident = intf.name().clone().into();
 
 	{
 		let mut f = create_json(intf.name());
-		let abi: json::Abi = (&intf).into();
+		let abi: json::Abi = intf.into();
 		serde_json::to_writer_pretty(&mut f, &abi).expect("failed to write json");
 	}
 
 	quote! {
-		#intf
-
-		pub struct #client_ident {
-			gas: Option<u64>,
-			address: ::parity_hash::Address,
-			value: Option<::bigint::U256>,
-		}
-
 		pub struct #endpoint_ident<T: #name_ident> {
 			inner: T,
-		}
-
-		impl #client_ident {
-			pub fn new(address: ::parity_hash::Address) -> Self {
-				#client_ident {
-					gas: None,
-					address: address,
-					value: None,
-				}
-			}
-
-			pub fn gas(mut self, gas: u64) -> Self {
-				self.gas = Some(gas);
-				self
-			}
-
-			pub fn value(mut self, val: ::bigint::U256) -> Self {
-				self.value = Some(val);
-				self
-			}
-		}
-
-		impl #name_ident for #client_ident {
-			#client_ctor
-			#(#calls)*
 		}
 
 		impl<T: #name_ident> #endpoint_ident<T> {

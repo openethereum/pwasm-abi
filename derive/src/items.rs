@@ -2,8 +2,6 @@ use {quote, syn, utils};
 
 pub struct Interface {
 	name: String,
-	endpoint_name: String,
-	client_name: String,
 	constructor: Option<Signature>,
 	items: Vec<Item>,
 }
@@ -62,20 +60,8 @@ impl Interface {
 				.next()
 				.map(|item| match item { Item::Signature(sig) => sig, _ => panic!("constructor must be function!") }),
 			name: source.ident.as_ref().to_string(),
-			endpoint_name: String::new(),
-			client_name: String::new(),
 			items: other_items,
 		}
-	}
-
-	pub fn endpoint(mut self, endpoint_name: String) -> Self {
-		self.endpoint_name = endpoint_name;
-		self
-	}
-
-	pub fn client(mut self, client_name: String) -> Self {
-		self.client_name = client_name;
-		self
 	}
 
 	pub fn items(&self) -> &[Item] {
@@ -84,14 +70,6 @@ impl Interface {
 
 	pub fn name(&self) -> &str {
 		&self.name
-	}
-
-	pub fn endpoint_name(&self) -> &str {
-		&self.endpoint_name
-	}
-
-	pub fn client_name(&self) -> &str {
-		&self.client_name
 	}
 
 	pub fn constructor(&self) -> Option<&Signature> {
