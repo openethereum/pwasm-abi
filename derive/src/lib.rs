@@ -72,7 +72,7 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 				#endpoint
 				#client
 			};
-			create_json(&intf);
+			write_json_abi(&intf);
 			generated.parse().expect("Failed to parse generated input")
 		}
 		len => {
@@ -81,7 +81,7 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	}
 }
 
-fn create_json(intf: &items::Interface) {
+fn write_json_abi(intf: &items::Interface) {
 	use std::fs;
 	use std::path::PathBuf;
 	use std::env;
