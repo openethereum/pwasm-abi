@@ -72,6 +72,7 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 				#endpoint
 				#client
 			};
+			create_json(&intf);
 			generated.parse().expect("Failed to parse generated input")
 		}
 		len => {
@@ -80,7 +81,7 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	}
 }
 
-fn create_json(name: &str) -> ::std::fs::File {
+fn create_json(intf: &items::Interface) {
 	use std::fs;
 	use std::path::PathBuf;
 	use std::env;
@@ -89,9 +90,11 @@ fn create_json(name: &str) -> ::std::fs::File {
 	target.push("target");
 	target.push("json");
 	fs::create_dir_all(&target).expect("failed to create json directory");
-	target.push(&format!("{}.json", name));
+	target.push(&format!("{}.json", intf.name()));
 
-	fs::File::create(target).expect("failed to write json")
+	let mut f = fs::File::create(target).expect("failed to write json");
+	let abi: json::Abi = intf.into();
+	serde_json::to_writer_pretty(&mut f, &abi).expect("failed to write json");
 }
 
 fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tokens {
@@ -260,12 +263,6 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 
 	let endpoint_ident: syn::Ident = endpoint_name.to_string().into();
 	let name_ident: syn::Ident = intf.name().clone().into();
-
-	{
-		let mut f = create_json(intf.name());
-		let abi: json::Abi = intf.into();
-		serde_json::to_writer_pretty(&mut f, &abi).expect("failed to write json");
-	}
 
 	quote! {
 		pub struct #endpoint_ident<T: #name_ident> {
