@@ -269,6 +269,14 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 			inner: T,
 		}
 
+		impl<T: #name_ident> From<T> for #endpoint_ident<T> {
+			fn from(inner: T) -> #endpoint_ident<T> {
+				#endpoint_ident {
+					inner: inner,
+				}
+			}
+		}
+
 		impl<T: #name_ident> #endpoint_ident<T> {
 			pub fn new(inner: T) -> Self {
 				#endpoint_ident {
