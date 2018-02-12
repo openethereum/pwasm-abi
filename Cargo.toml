@@ -8,7 +8,7 @@ repository = "https://github.com/paritytech/pwasm-abi"
 homepage = "https://github.com/paritytech/pwasm-abi"
 documentation = "https://paritytech.github.io/pwasm-abi/pwasm_abi/"
 description = "Rust WebAssembly Contracts Abi"
-keywords = ["wasm", "parity", "webassembly", "blockchain", "abi", "macros"]
+keywords = ["wasm", "parity", "webassembly", "blockchain", "abi"]
 categories = ["no-std", "embedded"]
 exclude = [ "tests/*", "derive/*" ]
 
