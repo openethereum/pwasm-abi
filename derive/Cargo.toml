@@ -2,6 +2,14 @@
 name = "pwasm-abi-derive"
 version = "0.1.0"
 authors = ["NikVolf <nikvolf@gmail.com>"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/paritytech/pwasm-abi"
+homepage = "https://github.com/paritytech/pwasm-abi"
+documentation = "https://paritytech.github.io/pwasm-abi/pwasm_abi/"
+description = "Rust WebAssembly Contracts Abi (derive macros)"
+keywords = ["wasm", "parity", "webassembly", "blockchain", "abi"]
+categories = ["no-std", "embedded"]
 
 [profile.release]
 panic = "abort"
