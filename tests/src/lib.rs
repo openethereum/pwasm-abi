@@ -11,14 +11,13 @@ use alloc::vec::Vec;
 
 extern crate pwasm_std;
 extern crate pwasm_ethereum;
-#[macro_use]
 extern crate pwasm_test;
 extern crate pwasm_abi;
 extern crate parity_hash;
 extern crate pwasm_abi_derive;
 extern crate bigint;
 
-use pwasm_test::{ExternalBuilder, ExternalInstance, get_external};
+use pwasm_test::{ext_get, ext_reset, Endpoint};
 
 mod erc20;
 
@@ -29,7 +28,7 @@ use bigint::U256;
 use parity_hash::Address;
 
 
-#[eth_abi(Endpoint, Client)]
+#[eth_abi(TestEndpoint, Client)]
 pub trait TestContract {
 	fn constructor(&mut self, _p: bool);
 
@@ -90,7 +89,7 @@ fn baz_dispatch() {
 		}
 	}
 
-	let mut endpoint = Endpoint::new(TestContractInstance::default());
+	let mut endpoint = TestEndpoint::new(TestContractInstance::default());
 	let result = endpoint.dispatch(PAYLOAD_SAMPLE_1);
 
 	assert_eq!(result, Vec::new());
@@ -129,7 +128,7 @@ fn sam_dispatch() {
 		}
 	}
 
-	let mut endpoint = Endpoint::new(TestContractInstance::default());
+	let mut endpoint = TestEndpoint::new(TestContractInstance::default());
 	let result = endpoint.dispatch(PAYLOAD_SAMPLE_2);
 
 	assert_eq!(result, Vec::new());
@@ -162,7 +161,7 @@ fn boo_dispatch() {
 		}
 	}
 
-	let mut endpoint = Endpoint::new(TestContractInstance::default());
+	let mut endpoint = TestEndpoint::new(TestContractInstance::default());
 	let result = endpoint.dispatch(PAYLOAD_SAMPLE_3);
 
 	assert_eq!(&result[28..32], &[0x00, 0x00, 0x00, 0xff]);
@@ -199,10 +198,10 @@ fn dispatch_empty_abi() {
 	assert!(endpoint.inner.p);
 }
 
-test_with_external!(
-	ExternalBuilder::new().build(),
-	baz_call {
-		let mut client = Client::new(Address::zero());
-		client.baz(69, true);
-		assert_eq!(get_external::<ExternalInstance>().calls()[0].input.as_ref(), PAYLOAD_SAMPLE_1);
-});
+#[test]
+fn baz_call() {
+	ext_reset(|e| e.endpoint(Address::zero(), Endpoint::ok()));
+	let mut client = Client::new(Address::zero());
+	client.baz(69, true);
+	assert_eq!(ext_get().calls()[0].input.as_ref(), PAYLOAD_SAMPLE_1);
+}
