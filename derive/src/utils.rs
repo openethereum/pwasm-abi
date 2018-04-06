@@ -61,6 +61,13 @@ pub fn produce_signature<T: quote::ToTokens>(
 	}
 }
 
+fn push_int_const_expr(target: &mut String, expr: &syn::ConstExpr) {
+	match *expr {
+		syn::ConstExpr::Lit(syn::Lit::Int(val, _)) => target.push_str(&format!("{}", val)),
+		_ => panic!("Cannot use something other than integer literal in this constant expression"),
+	}
+}
+
 pub fn push_canonical(target: &mut String, ty: &syn::Ty) {
 	match *ty {
 		syn::Ty::Path(None, ref path) => {
@@ -93,6 +100,18 @@ pub fn push_canonical(target: &mut String, ty: &syn::Ty) {
 				"bool" => target.push_str("bool"),
 				ref val @ _ => panic!("Unable to handle param of type {}: not supported by abi", val)
 			}
+		},
+		syn::Ty::Array(ref nested_ty, ref const_expr) => {
+			// special cases for bytesXXX
+			if let syn::Ty::Path(None, ref nested_path) = **nested_ty {
+				if "u8" == nested_path.segments.last().unwrap().ident.to_string() {
+					target.push_str("bytes");
+					push_int_const_expr(target, const_expr);
+					return;
+				}
+			}
+
+			panic!("Unsupported! Use variable-size arrays")
 		},
 		ref val @ _ => panic!("Unable to handle param of type {:?}: not supported by abi", val),
 	};
