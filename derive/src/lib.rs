@@ -55,25 +55,30 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	let intf = items::Interface::from_item(ast);
 
 	match args.len() {
-		1 => {
-			let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
-			let generated = quote! {
-				#intf
-				#endpoint
-			};
-			generated.parse().expect("Failed to parse generated input")
-		}
-		2 => {
-			let client_name = args.get(1).expect("Failed to parse an client name argument");
-			let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
-			let client = generate_eth_client(client_name, &intf);
-			let generated = quote! {
-				#intf
-				#endpoint
-				#client
-			};
+		arg_count @ 1 | arg_count @ 2 => {
 			write_json_abi(&intf);
-			generated.parse().expect("Failed to parse generated input")
+			match arg_count {
+				1 => {
+					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
+					let generated = quote! {
+						#intf
+						#endpoint
+					};
+					generated.parse().expect("Failed to parse generated input")
+				},
+				2 => {
+					let client_name = args.get(1).expect("Failed to parse an client name argument");
+					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
+					let client = generate_eth_client(client_name, &intf);
+					let generated = quote! {
+						#intf
+						#endpoint
+						#client
+					};
+					generated.parse().expect("Failed to parse generated input")
+				},
+				_ => { unreachable!(); }
+			}
 		}
 		len => {
 			panic!("eth_abi marco takes one or two comma-separated arguments, passed {}", len);
