@@ -57,12 +57,21 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	match args.len() {
 		arg_count @ 1 | arg_count @ 2 => {
 			write_json_abi(&intf);
+			let name_ident_use: syn::Ident = format!("super::{}", &intf.name().clone()).into();
 			match arg_count {
 				1 => {
 					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
+					let endpoint_use: syn::Ident = format!("self::pwasm_abi_impl::{}", &endpoint_name).into();
 					let generated = quote! {
 						#intf
-						#endpoint
+						mod pwasm_abi_impl {
+							extern crate bigint;
+							extern crate parity_hash;
+							extern crate pwasm_ethereum;
+							use #name_ident_use;
+							#endpoint
+						}
+						pub use #endpoint_use;
 					};
 					generated.parse().expect("Failed to parse generated input")
 				},
@@ -70,10 +79,20 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 					let client_name = args.get(1).expect("Failed to parse an client name argument");
 					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
 					let client = generate_eth_client(client_name, &intf);
+					let endpoint_use: syn::Ident = format!("self::pwasm_abi_impl::{}", &endpoint_name).into();
+					let client_use: syn::Ident = format!("self::pwasm_abi_impl::{}", &client_name).into();
 					let generated = quote! {
 						#intf
-						#endpoint
-						#client
+						mod pwasm_abi_impl {
+							extern crate bigint;
+							extern crate parity_hash;
+							extern crate pwasm_ethereum;
+							use #name_ident_use;
+							#endpoint
+							#client
+						}
+						pub use #endpoint_use;
+						pub use #client_use;
 					};
 					generated.parse().expect("Failed to parse generated input")
 				},
@@ -160,7 +179,7 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 
 						#result_instance
 
-						::pwasm_ethereum::call(self.gas.unwrap_or(::pwasm_ethereum::gas_limit().into()), &self.address, self.value.clone().unwrap_or(::bigint::U256::zero()), &payload, &mut result[..])
+						pwasm_ethereum::call(self.gas.unwrap_or(pwasm_ethereum::gas_limit().into()), &self.address, self.value.clone().unwrap_or(bigint::U256::zero()), &payload, &mut result[..])
 							.expect("Call failed; todo: allow handling inside contracts");
 
 						#result_pop
@@ -187,12 +206,12 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 	quote! {
 		pub struct #client_ident {
 			gas: Option<u64>,
-			address: ::parity_hash::Address,
-			value: Option<::bigint::U256>,
+			address: parity_hash::Address,
+			value: Option<bigint::U256>,
 		}
 
 		impl #client_ident {
-			pub fn new(address: ::parity_hash::Address) -> Self {
+			pub fn new(address: parity_hash::Address) -> Self {
 				#client_ident {
 					gas: None,
 					address: address,
@@ -205,7 +224,7 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 				self
 			}
 
-			pub fn value(mut self, val: ::bigint::U256) -> Self {
+			pub fn value(mut self, val: bigint::U256) -> Self {
 				self.value = Some(val);
 				self
 			}
@@ -271,7 +290,7 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 
 	quote! {
 		pub struct #endpoint_ident<T: #name_ident> {
-			inner: T,
+			pub inner: T,
 		}
 
 		impl<T: #name_ident> From<T> for #endpoint_ident<T> {
