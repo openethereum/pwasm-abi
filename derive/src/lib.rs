@@ -68,6 +68,7 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 							extern crate bigint;
 							extern crate parity_hash;
 							extern crate pwasm_ethereum;
+							extern crate pwasm_abi;
 							use #name_ident_use;
 							#endpoint
 						}
@@ -87,6 +88,7 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 							extern crate bigint;
 							extern crate parity_hash;
 							extern crate pwasm_ethereum;
+							extern crate pwasm_abi;
 							use #name_ident_use;
 							#endpoint
 							#client
@@ -155,7 +157,7 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 				let result_pop = match signature.method_sig.decl.output {
 					syn::FunctionRetTy::Default => None,
 					syn::FunctionRetTy::Ty(_) => Some(quote!{
-						let mut stream = ::pwasm_abi::eth::Stream::new(&result);
+						let mut stream = pwasm_abi::eth::Stream::new(&result);
 						stream.pop().expect("failed decode call output")
 					}),
 				};
@@ -172,7 +174,7 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 						payload.push((#hash_literal >> 8) as u8);
 						payload.push(#hash_literal as u8);
 
-						let mut sink = ::pwasm_abi::eth::Sink::new(#argument_count_literal);
+						let mut sink = pwasm_abi::eth::Sink::new(#argument_count_literal);
 						#(#argument_push)*
 
 						sink.drain_to(&mut payload);
@@ -242,7 +244,7 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 		|signature| {
 			let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
 			quote! {
-				let mut stream = ::pwasm_abi::eth::Stream::new(payload);
+				let mut stream = pwasm_abi::eth::Stream::new(payload);
 				self.inner.constructor(
 					#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
 				);
@@ -260,11 +262,11 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 				if let Some(_) = signature.return_type {
 					Some(quote! {
 						#hash_literal => {
-							let mut stream = ::pwasm_abi::eth::Stream::new(method_payload);
+							let mut stream = pwasm_abi::eth::Stream::new(method_payload);
 							let result = inner.#ident(
 								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
 							);
-							let mut sink = ::pwasm_abi::eth::Sink::new(1);
+							let mut sink = pwasm_abi::eth::Sink::new(1);
 							sink.push(result);
 							sink.finalize_panicking()
 						}
@@ -272,7 +274,7 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 				} else {
 					Some(quote! {
 						#hash_literal => {
-							let mut stream = ::pwasm_abi::eth::Stream::new(method_payload);
+							let mut stream = pwasm_abi::eth::Stream::new(method_payload);
 							inner.#ident(
 								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
 							);
@@ -313,7 +315,7 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 			}
 		}
 
-		impl<T: #name_ident> ::pwasm_abi::eth::EndpointInterface for #endpoint_ident<T> {
+		impl<T: #name_ident> pwasm_abi::eth::EndpointInterface for #endpoint_ident<T> {
 			#[allow(unused_mut)]
 			#[allow(unused_variables)]
 			fn dispatch(&mut self, payload: &[u8]) -> Vec<u8> {
