@@ -21,6 +21,7 @@ use pwasm_test::{ext_get, ext_reset, Endpoint};
 
 mod erc20;
 mod arrays;
+mod trivia;
 
 use pwasm_abi_derive::eth_abi;
 use pwasm_abi::eth::EndpointInterface;
@@ -172,14 +173,15 @@ fn boo_dispatch() {
 }
 
 #[allow(dead_code)]
-#[test]
-fn dispatch_empty_abi() {
+mod contract {
+	use pwasm_abi_derive::eth_abi;
+
 	#[eth_abi(EmptyEndpoint, _EmptyClient)]
 	trait EmptyContract {
 		fn constructor(&mut self, _p: bool);
 	}
 
-	struct EmptyContractInstance {
+	pub struct EmptyContractInstance {
 		pub called: bool,
 		pub p: bool
 	}
@@ -191,7 +193,12 @@ fn dispatch_empty_abi() {
 		}
 	}
 
-	let mut endpoint = EmptyEndpoint::new(EmptyContractInstance{called: false, p: false});
+}
+
+#[test]
+fn dispatch_empty_abi() {
+
+	let mut endpoint = contract::EmptyEndpoint::new(contract::EmptyContractInstance{called: false, p: false});
 	endpoint.dispatch_ctor(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]);
