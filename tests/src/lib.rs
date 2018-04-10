@@ -21,6 +21,7 @@ use pwasm_test::{ext_get, ext_reset, Endpoint};
 
 mod erc20;
 mod arrays;
+mod inner_externs;
 
 use pwasm_abi_derive::eth_abi;
 use pwasm_abi::eth::EndpointInterface;
