@@ -1,8 +1,5 @@
 #![allow(dead_code)]
-// The eth_abi marco generates code uses
-// `bigint`, `parity_hash`, `pwasm_ethereum` and `pwasm_abi` crates
-// The following code demonstrates that user dont have to import these crates
-// unless he doesn't use one of those directly
+// Minimal interface test/example
 
 use pwasm_abi_derive::eth_abi;
 
