@@ -132,7 +132,8 @@ impl Item {
 						into_signature(ident,
 							method_sig,
 							has_attribute(&attrs, "constant"),
-							has_attribute(&attrs, "payable"))
+							has_attribute(&attrs, "payable")
+						)
 					)
 				}
 			},
