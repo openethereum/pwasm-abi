@@ -94,13 +94,13 @@ fn payable_constructor() {
 #[test]
 fn payable_method() {
 	ext_reset(|e| e.value(1.into()));
-	PayableEndpoint::new(PayableContractInstance{}).dispatch_ctor(&[]);
+	PayableEndpoint::new(PayableContractInstance{}).dispatch(PAYLOAD_BAZ);
 }
 
 #[test]
 fn payable_method_ret() {
 	ext_reset(|e| e.value(1.into()));
-	PayableEndpoint::new(PayableContractInstance{}).dispatch_ctor(&[]);
+	PayableEndpoint::new(PayableContractInstance{}).dispatch(PAYLOAD_BOO);
 }
 
 #[test]
@@ -110,11 +110,11 @@ fn payable_constructor_no_value() {
 
 #[test]
 fn payable_method_no_value() {
-	PayableEndpoint::new(PayableContractInstance{}).dispatch_ctor(&[]);
+	PayableEndpoint::new(PayableContractInstance{}).dispatch(PAYLOAD_BAZ);
 }
 
 #[test]
 fn payable_method_ret_no_value() {
-	PayableEndpoint::new(PayableContractInstance{}).dispatch_ctor(&[]);
+	PayableEndpoint::new(PayableContractInstance{}).dispatch(PAYLOAD_BOO);
 }
 
