@@ -22,6 +22,7 @@ use pwasm_test::{ext_get, ext_reset, Endpoint};
 mod erc20;
 mod arrays;
 mod trivia;
+mod payable;
 
 use pwasm_abi_derive::eth_abi;
 use pwasm_abi::eth::EndpointInterface;
