@@ -244,14 +244,17 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 }
 
 fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote::Tokens {
+	let check_value_code = quote! {
+		if pwasm_ethereum::value() > 0.into() {
+			panic!("Unable to accept value in non-payable constructor call");
+		}
+	};
 	let ctor_branch = intf.constructor().map(
 		|signature| {
 			let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
-			let is_not_payable = if signature.is_payable { quote! { false } } else { quote! { true } };
+			let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };
 			quote! {
-				if #is_not_payable && pwasm_ethereum::value() > 0.into() {
-					panic!("Unable to accept value in non-payable constructor call");
-				}
+				#check_value_if_payable
 				let mut stream = pwasm_abi::eth::Stream::new(payload);
 				self.inner.constructor(
 					#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
@@ -266,14 +269,11 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 				let hash_literal = syn::Lit::Int(signature.hash as u64, syn::IntTy::U32);
 				let ident = &signature.name;
 				let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
-				let is_not_payable = if signature.is_payable { quote! { false } } else { quote! { true } };
-
+				let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };
 				if let Some(_) = signature.return_type {
 					Some(quote! {
 						#hash_literal => {
-							if #is_not_payable && pwasm_ethereum::value() > 0.into() {
-								panic!("Unable to accept value in non-payable method call");
-							}
+							#check_value_if_payable
 							let mut stream = pwasm_abi::eth::Stream::new(method_payload);
 							let result = inner.#ident(
 								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
@@ -286,9 +286,7 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 				} else {
 					Some(quote! {
 						#hash_literal => {
-							if #is_not_payable && pwasm_ethereum::value() > 0.into() {
-								panic!("Unable to accept value in non-payable method call");
-							}
+							#check_value_if_payable
 							let mut stream = pwasm_abi::eth::Stream::new(method_payload);
 							inner.#ident(
 								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
