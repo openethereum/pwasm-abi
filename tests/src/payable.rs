@@ -35,36 +35,36 @@ impl NonPayableContract for NonPayableContractInstance {
 #[should_panic]
 fn non_payable_constructor_value() {
 	ext_reset(|e| e.value(1.into()));
-	NonPayableEndpoint::new(NonPayableContractInstance{}).dispatch_ctor(&[]);
+	NonPayableEndpoint::new(NonPayableContractInstance).dispatch_ctor(&[]);
 }
 
 #[test]
 #[should_panic]
 fn non_payable_value() {
 	ext_reset(|e| e.value(1.into()));
-	NonPayableEndpoint::new(NonPayableContractInstance{}).dispatch(PAYLOAD_BAZ);
+	NonPayableEndpoint::new(NonPayableContractInstance).dispatch(PAYLOAD_BAZ);
 }
 
 #[test]
 #[should_panic]
 fn non_payable_with_ret_value() {
 	ext_reset(|e| e.value(1.into()));
-	NonPayableEndpoint::new(NonPayableContractInstance{}).dispatch(PAYLOAD_BOO);
+	NonPayableEndpoint::new(NonPayableContractInstance).dispatch(PAYLOAD_BOO);
 }
 
 #[test]
 fn non_payable_constructor_no_value() {
-	NonPayableEndpoint::new(NonPayableContractInstance{}).dispatch_ctor(&[]);
+	NonPayableEndpoint::new(NonPayableContractInstance).dispatch_ctor(&[]);
 }
 
 #[test]
 fn non_payable_no_value() {
-	NonPayableEndpoint::new(NonPayableContractInstance{}).dispatch(PAYLOAD_BAZ);
+	NonPayableEndpoint::new(NonPayableContractInstance).dispatch(PAYLOAD_BAZ);
 }
 
 #[test]
 fn non_payable_no_value_ret() {
-	NonPayableEndpoint::new(NonPayableContractInstance{}).dispatch(PAYLOAD_BOO);
+	NonPayableEndpoint::new(NonPayableContractInstance).dispatch(PAYLOAD_BOO);
 }
 
 #[eth_abi(PayableEndpoint)]
@@ -88,33 +88,32 @@ impl PayableContract for PayableContractInstance {
 #[test]
 fn payable_constructor() {
 	ext_reset(|e| e.value(1.into()));
-	PayableEndpoint::new(PayableContractInstance{}).dispatch_ctor(&[]);
+	PayableEndpoint::new(PayableContractInstance).dispatch_ctor(&[]);
 }
 
 #[test]
 fn payable_method() {
 	ext_reset(|e| e.value(1.into()));
-	PayableEndpoint::new(PayableContractInstance{}).dispatch(PAYLOAD_BAZ);
+	PayableEndpoint::new(PayableContractInstance).dispatch(PAYLOAD_BAZ);
 }
 
 #[test]
 fn payable_method_ret() {
 	ext_reset(|e| e.value(1.into()));
-	PayableEndpoint::new(PayableContractInstance{}).dispatch(PAYLOAD_BOO);
+	PayableEndpoint::new(PayableContractInstance).dispatch(PAYLOAD_BOO);
 }
 
 #[test]
 fn payable_constructor_no_value() {
-	PayableEndpoint::new(PayableContractInstance{}).dispatch_ctor(&[]);
+	PayableEndpoint::new(PayableContractInstance).dispatch_ctor(&[]);
 }
 
 #[test]
 fn payable_method_no_value() {
-	PayableEndpoint::new(PayableContractInstance{}).dispatch(PAYLOAD_BAZ);
+	PayableEndpoint::new(PayableContractInstance).dispatch(PAYLOAD_BAZ);
 }
 
 #[test]
 fn payable_method_ret_no_value() {
-	PayableEndpoint::new(PayableContractInstance{}).dispatch(PAYLOAD_BOO);
+	PayableEndpoint::new(PayableContractInstance).dispatch(PAYLOAD_BOO);
 }
-
