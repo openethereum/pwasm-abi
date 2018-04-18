@@ -16,8 +16,9 @@ panic = "abort"
 
 [dependencies]
 pwasm-abi = { path = "..", version = "0.1" }
-quote = "0.3"
-syn = { version = "0.11", features = ["full"] }
+quote = "0.5"
+syn = { version = "0.13", features = ["full"] }
+proc-macro2 = { version = "0.3"}
 tiny-keccak = { version = "1.3", default-features = false }
 byteorder = { version = "1", default-features = false }
 parity-hash = { version = "1", default-features = false }

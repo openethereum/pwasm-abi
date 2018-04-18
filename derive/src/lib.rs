@@ -4,6 +4,7 @@
 #![recursion_limit="128"]
 
 extern crate proc_macro;
+extern crate proc_macro2;
 extern crate pwasm_abi as abi;
 extern crate syn;
 #[macro_use] extern crate quote;
@@ -48,7 +49,7 @@ fn parse_args(args: TokenStream) -> Vec<String> {
 #[proc_macro_attribute]
 pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 	let source = input.to_string();
-	let ast = syn::parse_item(&source).expect("Failed to parse derive input");
+	let ast: syn::ItemTrait = syn::parse(&source).expect("Failed to parse derive input");
 
 	let args = parse_args(args);
 	let endpoint_name = args.get(0).expect("Failed to parse an endpoint name argument");
@@ -143,24 +144,32 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 	let calls: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
 		match *item {
 			Item::Signature(ref signature)  => {
-				let hash_literal = syn::Lit::Int(signature.hash as u64, syn::IntTy::U32);
+				let hash_literal = syn::Lit::Int(syn::LitInt::new(
+					signature.hash as u64,
+					syn::IntSuffix::U32,
+					proc_macro2::call_site())
+				);
 				let argument_push: Vec<quote::Tokens> = utils::iter_signature(&signature.method_sig)
 					.map(|(pat, _)| quote! { sink.push(#pat); })
 					.collect();
-				let argument_count_literal = syn::Lit::Int(argument_push.len() as u64, syn::IntTy::Usize);
+				let argument_count_literal = syn::Lit::Int(syn::LitInt::new(
+					argument_push.len() as u64,
+					syn::IntSuffix::Usize,
+					proc_macro2::call_site())
+				);
 
 				let result_instance = match signature.method_sig.decl.output {
-					syn::FunctionRetTy::Default => quote!{
+					syn::ReturnType::Default => quote!{
 						let mut result = Vec::new();
 					},
-					syn::FunctionRetTy::Ty(_) => quote!{
+					syn::ReturnType::Type(_) => quote!{
 						let mut result = [0u8; 32];
 					},
 				};
 
 				let result_pop = match signature.method_sig.decl.output {
-					syn::FunctionRetTy::Default => None,
-					syn::FunctionRetTy::Ty(_) => Some(quote!{
+					syn::ReturnType::Default => None,
+					syn::ReturnType::Type(_) => Some(quote!{
 						let mut stream = pwasm_abi::eth::Stream::new(&result);
 						stream.pop().expect("failed decode call output")
 					}),
@@ -252,9 +261,8 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 	let ctor_branch = intf.constructor().map(
 		|signature| {
 			let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
-			let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };
 			quote! {
-				#check_value_if_payable
+				#{ if signature.is_payable { quote! {} } else { quote! {#check_value_code} } }
 				let mut stream = pwasm_abi::eth::Stream::new(payload);
 				self.inner.constructor(
 					#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
@@ -266,7 +274,11 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 	let branches: Vec<quote::Tokens> = intf.items().iter().filter_map(|item| {
 		match *item {
 			Item::Signature(ref signature)  => {
-				let hash_literal = syn::Lit::Int(signature.hash as u64, syn::IntTy::U32);
+				let hash_literal = syn::Lit::Int(syn::LitInt::new(
+					signature.hash as u64,
+					syn::IntSuffix::U32,
+					proc_macro2::call_site())
+				);
 				let ident = &signature.name;
 				let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
 				let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };

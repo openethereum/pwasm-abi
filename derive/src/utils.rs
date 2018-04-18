@@ -44,14 +44,14 @@ pub fn produce_signature<T: quote::ToTokens>(
 		}
 	});
 	match method_sig.decl.output {
-		syn::FunctionRetTy::Ty(ref output) => {
+		syn::ReturnType::Type(_, ref output) => {
 			quote!{
 				fn #ident(&mut self, #(#args),*) -> #output {
 					#t
 				}
 			}
 		},
-		syn::FunctionRetTy::Default => {
+		syn::ReturnType::Default => {
 			quote!{
 				fn #ident(&mut self, #(#args),*) {
 					#t
@@ -61,16 +61,19 @@ pub fn produce_signature<T: quote::ToTokens>(
 	}
 }
 
-fn push_int_const_expr(target: &mut String, expr: &syn::ConstExpr) {
-	match *expr {
-		syn::ConstExpr::Lit(syn::Lit::Int(val, _)) => target.push_str(&format!("{}", val)),
-		_ => panic!("Cannot use something other than integer literal in this constant expression"),
+fn push_int_const_expr(target: &mut String, len_expr: &syn::Expr) {
+	if let syn::Expr::Lit(ref lit) = *len_expr {
+		if let syn::Lit::Int(ref len) = *lit {
+			target.push_str(&format!("{}", len));
+			return;
+		}
 	}
+	panic!("Cannot use something other than integer literal in this constant expression")
 }
 
-pub fn push_canonical(target: &mut String, ty: &syn::Ty) {
+pub fn push_canonical(target: &mut String, ty: &syn::Type) {
 	match *ty {
-		syn::Ty::Path(None, ref path) => {
+		syn::Type::Path(None, ref path) => {
 			let last_path = path.segments.last().unwrap();
 			match last_path.ident.to_string().as_ref() {
 				"u32" => target.push_str("uint32"),
@@ -81,11 +84,11 @@ pub fn push_canonical(target: &mut String, ty: &syn::Ty) {
 				"H256" => target.push_str("uint256"),
 				"Address" => target.push_str("address"),
 				"Vec" => {
-					match last_path.parameters {
-						syn::PathParameters::AngleBracketed(ref param_data) => {
-							let vec_arg = param_data.types.last().unwrap();
-							if let syn::Ty::Path(None, ref nested_path) = *vec_arg {
-								if "u8" == nested_path.segments.last().unwrap().ident.to_string() {
+					match last_path.arguments {
+						syn::PathArguments::AngleBracketed(ref param_data) => {
+							let vec_arg = param_data.args.last().unwrap();
+							if let syn::GenericArgument::Type(syn::Type::Path(ref nested_path)) = *vec_arg {
+								if "u8" == nested_path.path.segments.last().unwrap().ident.to_string() {
 									target.push_str("bytes");
 									return;
 								}
@@ -101,23 +104,22 @@ pub fn push_canonical(target: &mut String, ty: &syn::Ty) {
 				ref val @ _ => panic!("Unable to handle param of type {}: not supported by abi", val)
 			}
 		},
-		syn::Ty::Array(ref nested_ty, ref const_expr) => {
+		syn::Type::Array(ref array) => {
 			// special cases for bytesXXX
-			if let syn::Ty::Path(None, ref nested_path) = **nested_ty {
+			if let syn::Type::Path(ref nested_path) = *array.elem {
 				if "u8" == nested_path.segments.last().unwrap().ident.to_string() {
 					target.push_str("bytes");
-					push_int_const_expr(target, const_expr);
+					push_int_const_expr(target, array.len);
 					return;
 				}
 			}
-
 			panic!("Unsupported! Use variable-size arrays")
 		},
 		ref val @ _ => panic!("Unable to handle param of type {:?}: not supported by abi", val),
 	};
 }
 
-pub fn canonical_ty(ty: &syn::Ty) -> String {
+pub fn canonical_ty(ty: &syn::Type) -> String {
 	let mut result = String::new();
 	push_canonical(&mut result, ty);
 	result

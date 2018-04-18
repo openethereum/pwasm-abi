@@ -1,4 +1,4 @@
-use {quote, syn, utils};
+use {quote, syn, utils, proc_macro2};
 
 pub struct Interface {
 	name: String,
@@ -10,8 +10,8 @@ pub struct Event {
 	pub name: syn::Ident,
 	pub canonical: String,
 	pub method_sig: syn::MethodSig,
-	pub indexed: Vec<(syn::Pat, syn::Ty)>,
-	pub data: Vec<(syn::Pat, syn::Ty)>,
+	pub indexed: Vec<(syn::Pat, syn::Type)>,
+	pub data: Vec<(syn::Pat, syn::Type)>,
 }
 
 #[derive(Clone)]
@@ -20,8 +20,8 @@ pub struct Signature {
 	pub canonical: String,
 	pub method_sig: syn::MethodSig,
 	pub hash: u32,
-	pub arguments: Vec<(syn::Pat, syn::Ty)>,
-	pub return_type: Option<syn::Ty>,
+	pub arguments: Vec<(syn::Pat, syn::Type)>,
+	pub return_type: Option<syn::Type>,
 	pub is_constant: bool,
 	pub is_payable: bool,
 }
@@ -29,7 +29,7 @@ pub struct Signature {
 pub enum Item {
 	Signature(Signature),
 	Event(Event),
-	Other(syn::TraitItem),
+	Other(syn::ItemTrait),
 }
 
 impl Item {
@@ -44,13 +44,9 @@ impl Item {
 }
 
 impl Interface {
-	pub fn from_item(source: syn::Item) -> Self {
-		let trait_items = match source.node {
-			syn::ItemKind::Trait(_, _, _, items) => items,
-			_ => { panic!("Dispatch trait can work with trait declarations only!"); }
-		};
+	pub fn from_item(source: syn::ItemTrait) -> Self {
 
-		let (constructor_items, other_items) = trait_items
+		let (constructor_items, other_items) = source.items
 			.into_iter()
 			.map(Item::from_trait_item)
 			.partition::<Vec<Item>, _>(|item| item.name().map_or(false, |ident| ident.as_ref() == "constructor"));
@@ -79,11 +75,11 @@ impl Interface {
 }
 
 fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_constant: bool, is_payable: bool) -> Signature {
-	let arguments: Vec<(syn::Pat, syn::Ty)> = utils::iter_signature(&method_sig).collect();
+	let arguments: Vec<(syn::Pat, syn::Type)> = utils::iter_signature(&method_sig).collect();
 	let canonical = utils::canonical(&ident, &method_sig);
-	let return_type: Option<syn::Ty> = match method_sig.decl.output {
-		syn::FunctionRetTy::Default => None,
-		syn::FunctionRetTy::Ty(ref ty) => Some(ty.clone()),
+	let return_type: Option<syn::Type> = match method_sig.decl.output {
+		syn::ReturnType::Default => None,
+		syn::ReturnType::Type(ref ty) => Some(ty.clone()),
 	};
 	let hash = utils::hash(&canonical);
 
@@ -101,36 +97,36 @@ fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_constant: bo
 
 fn has_attribute(attrs: &[syn::Attribute], name: &str) -> bool {
 	attrs.iter().any(|a| match a.value {
-		syn::MetaItem::Word(ref ident) => ident.as_ref() == name,
+		syn::Meta::Word(ref ident) => ident.as_ref() == name,
 		_ => false
 	})
 }
 
 impl Item {
-	pub fn from_trait_item(source: syn::TraitItem) -> Self {
+	pub fn from_trait_item(source: syn::ItemTrait) -> Self {
 		let ident = source.ident;
 		let node = source.node;
 		let attrs = source.attrs;
-		match node {
-			syn::TraitItemKind::Method(method_sig, None) => {
-				if has_attribute(&attrs, "event") {
-					let (indexed, non_indexed) = utils::iter_signature(&method_sig)
+		match source {
+			syn::TraitItem::Method(method) => {
+				if has_attribute(&method.attrs, "event") {
+					let (indexed, non_indexed) = utils::iter_signature(&method.sig)
 						.partition(|&(ref pat, _)| quote! { #pat }.to_string().starts_with("indexed_"));
-					let canonical = utils::canonical(&ident, &method_sig);
+					let canonical = utils::canonical(&method.sig.ident, &method.sig);
 
 					let event = Event {
-						name: ident,
+						name: method.sig.ident.clone(),
 						canonical: canonical,
 						indexed: indexed,
 						data: non_indexed,
-						method_sig: method_sig,
+						method_sig: method.sig,
 					};
 
 					Item::Event(event)
 				} else {
 					Item::Signature(
-						into_signature(ident,
-							method_sig,
+						into_signature(method.sig.ident.clone(),
+							method.sig,
 							has_attribute(&attrs, "constant"),
 							has_attribute(&attrs, "payable")
 						)
@@ -157,7 +153,7 @@ impl quote::ToTokens for Item {
 						{
 							let keccak = utils::keccak(&event.canonical);
 							let hash_bytes = keccak.as_ref().iter().map(|b| {
-								syn::Lit::Int(*b as u64, syn::IntTy::U8)
+								syn::Lit::Int(syn::LitInt::new(*b as u64, syn::IntSuffix::U8, proc_macro2::call_site()))
 							});
 
 							let indexed_pats = event.indexed.iter()
@@ -166,7 +162,7 @@ impl quote::ToTokens for Item {
 							let data_pats = event.data.iter()
 								.map(|&(ref pat, _)| pat);
 
-							let data_pats_count_lit = syn::Lit::Int(event.data.len() as u64, syn::IntTy::Usize);
+							let data_pats_count_lit = syn::Lit::Int(syn::LitInt::new(event.data.len() as u64, syn::IntSuffix::Usize, proc_macro2::call_site()));
 
 							quote! {
 								let topics = &[
@@ -185,13 +181,17 @@ impl quote::ToTokens for Item {
 				]);
 			},
 			Item::Signature(ref signature) => {
-				tokens.append_all(&[syn::TraitItem {
-					ident: signature.name.clone(),
+				tokens.append_all(&[syn::TraitItemMethod {
+					sig: syn::MethodSig {
+
+					}
 					attrs: Vec::new(),
-					node: syn::TraitItemKind::Method(
-						signature.method_sig.clone(),
-						None,
-					),
+					node: syn::TraitItem::Method(syn::TraitItemMethod{
+						attrs: vec![],
+						sig: signature.method_sig.clone(),
+						default: None,
+						semi_token: None,
+					}),
 				}]);
 			},
 			Item::Other(ref item) => {
