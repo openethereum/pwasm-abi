@@ -114,6 +114,7 @@ impl Item {
 		match node {
 			syn::TraitItemKind::Method(method_sig, None) => {
 				if has_attribute(&attrs, "event") {
+					assert!(ident.as_ref() != "constructor", "Constructor can't be event");
 					let (indexed, non_indexed) = utils::iter_signature(&method_sig)
 						.partition(|&(ref pat, _)| quote! { #pat }.to_string().starts_with("indexed_"));
 					let canonical = utils::canonical(&ident, &method_sig);
@@ -128,12 +129,14 @@ impl Item {
 
 					Item::Event(event)
 				} else {
+					let constant = has_attribute(&attrs, "constant");
+					let payable = has_attribute(&attrs, "payable");
+					assert!(!(constant && payable),
+						format!("Method {} cannot be constant and payable at the same time", ident.to_string()
+					));
+					assert!(!(ident.as_ref() == "constructor" && constant), "Constructor can't be constant");
 					Item::Signature(
-						into_signature(ident,
-							method_sig,
-							has_attribute(&attrs, "constant"),
-							has_attribute(&attrs, "payable")
-						)
+						into_signature(ident, method_sig, constant, payable)
 					)
 				}
 			},
