@@ -58,13 +58,16 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 		arg_count @ 1 | arg_count @ 2 => {
 			write_json_abi(&intf);
 			let name_ident_use: syn::Ident = format!("super::{}", &intf.name().clone()).into();
+			let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
+			let mod_name_ident: syn::Ident = mod_name.clone().into();
 			match arg_count {
 				1 => {
 					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
-					let endpoint_use: syn::Ident = format!("self::pwasm_abi_impl::{}", &endpoint_name).into();
+					let endpoint_use: syn::Ident = format!("self::{}::{}", &mod_name, &endpoint_name).into();
 					let generated = quote! {
 						#intf
-						mod pwasm_abi_impl {
+						#[allow(non_snake_case)]
+						mod #mod_name_ident {
 							extern crate bigint;
 							extern crate parity_hash;
 							extern crate pwasm_ethereum;
@@ -80,11 +83,12 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 					let client_name = args.get(1).expect("Failed to parse an client name argument");
 					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
 					let client = generate_eth_client(client_name, &intf);
-					let endpoint_use: syn::Ident = format!("self::pwasm_abi_impl::{}", &endpoint_name).into();
-					let client_use: syn::Ident = format!("self::pwasm_abi_impl::{}", &client_name).into();
+					let endpoint_use: syn::Ident = format!("self::{}::{}", &mod_name, &endpoint_name).into();
+					let client_use: syn::Ident = format!("self::{}::{}", &mod_name, &client_name).into();
 					let generated = quote! {
 						#intf
-						mod pwasm_abi_impl {
+						#[allow(non_snake_case)]
+						mod #mod_name_ident {
 							extern crate bigint;
 							extern crate parity_hash;
 							extern crate pwasm_ethereum;
@@ -240,10 +244,17 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 }
 
 fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote::Tokens {
+	let check_value_code = quote! {
+		if pwasm_ethereum::value() > 0.into() {
+			panic!("Unable to accept value in non-payable constructor call");
+		}
+	};
 	let ctor_branch = intf.constructor().map(
 		|signature| {
 			let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
+			let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };
 			quote! {
+				#check_value_if_payable
 				let mut stream = pwasm_abi::eth::Stream::new(payload);
 				self.inner.constructor(
 					#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
@@ -258,10 +269,11 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 				let hash_literal = syn::Lit::Int(signature.hash as u64, syn::IntTy::U32);
 				let ident = &signature.name;
 				let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
-
+				let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };
 				if let Some(_) = signature.return_type {
 					Some(quote! {
 						#hash_literal => {
+							#check_value_if_payable
 							let mut stream = pwasm_abi::eth::Stream::new(method_payload);
 							let result = inner.#ident(
 								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
@@ -274,6 +286,7 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 				} else {
 					Some(quote! {
 						#hash_literal => {
+							#check_value_if_payable
 							let mut stream = pwasm_abi::eth::Stream::new(method_payload);
 							inner.#ident(
 								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
