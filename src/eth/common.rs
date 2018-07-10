@@ -264,6 +264,81 @@ macro_rules! abi_type_fixed_impl {
 	}
 }
 
+impl<T1: AbiType, T2: AbiType> AbiType for (T1, T2) {
+	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
+		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
+	}
+
+	fn encode(self, sink: &mut Sink) {
+		self.0.encode(sink);
+		self.1.encode(sink);
+	}
+
+	const IS_FIXED: bool = true;
+}
+
+impl<T1: AbiType, T2: AbiType, T3: AbiType> AbiType for (T1, T2, T3) {
+	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
+		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
+	}
+
+	fn encode(self, sink: &mut Sink) {
+		self.0.encode(sink);
+		self.1.encode(sink);
+		self.2.encode(sink);
+	}
+
+	const IS_FIXED: bool = true;
+}
+
+impl<T1: AbiType, T2: AbiType, T3: AbiType, T4: AbiType> AbiType for (T1, T2, T3, T4) {
+	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
+		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
+	}
+
+	fn encode(self, sink: &mut Sink) {
+		self.0.encode(sink);
+		self.1.encode(sink);
+		self.2.encode(sink);
+		self.3.encode(sink);
+	}
+
+	const IS_FIXED: bool = true;
+}
+
+impl<T1: AbiType, T2: AbiType, T3: AbiType, T4: AbiType, T5: AbiType> AbiType for (T1, T2, T3, T4, T5) {
+	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
+		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
+	}
+
+	fn encode(self, sink: &mut Sink) {
+		self.0.encode(sink);
+		self.1.encode(sink);
+		self.2.encode(sink);
+		self.3.encode(sink);
+		self.4.encode(sink);
+	}
+
+	const IS_FIXED: bool = true;
+}
+
+impl<T1: AbiType, T2: AbiType, T3: AbiType, T4: AbiType, T5: AbiType, T6: AbiType> AbiType for (T1, T2, T3, T4, T5, T6) {
+	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
+		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
+	}
+
+	fn encode(self, sink: &mut Sink) {
+		self.0.encode(sink);
+		self.1.encode(sink);
+		self.2.encode(sink);
+		self.3.encode(sink);
+		self.4.encode(sink);
+		self.5.encode(sink);
+	}
+
+	const IS_FIXED: bool = true;
+}
+
 abi_type_fixed_impl!(1);
 abi_type_fixed_impl!(2);
 abi_type_fixed_impl!(3);

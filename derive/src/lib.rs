@@ -270,7 +270,8 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 				let ident = &signature.name;
 				let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
 				let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };
-				if let Some(_) = signature.return_type {
+				if !signature.return_type.is_empty() {
+					let return_count_literal = syn::Lit::Int(signature.return_type.len() as u64, syn::IntTy::Usize);
 					Some(quote! {
 						#hash_literal => {
 							#check_value_if_payable
@@ -278,7 +279,7 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 							let result = inner.#ident(
 								#(stream.pop::<#arg_types>().expect("argument decoding failed")),*
 							);
-							let mut sink = pwasm_abi::eth::Sink::new(1);
+							let mut sink = pwasm_abi::eth::Sink::new(#return_count_literal);
 							sink.push(result);
 							sink.finalize_panicking()
 						}

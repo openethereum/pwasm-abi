@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), feature(alloc))]
 #![feature(proc_macro)]
+#![feature(proc_macro_gen)]
 #![cfg(test)]
 
 #[cfg(not(test))]
@@ -23,6 +24,7 @@ mod erc20;
 mod arrays;
 mod trivia;
 mod payable;
+mod multiple_return;
 
 use pwasm_abi_derive::eth_abi;
 use pwasm_abi::eth::EndpointInterface;

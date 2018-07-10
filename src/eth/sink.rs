@@ -5,6 +5,7 @@ use super::AbiType;
 
 /// Sink for returning number of arguments
 pub struct Sink {
+	capacity: usize,
 	preamble: Vec<u8>,
 	heap: Vec<u8>,
 }
@@ -13,6 +14,7 @@ impl Sink {
 	/// New sink with known capacity
 	pub fn new(capacity: usize) -> Self {
 		Sink {
+			capacity: 32 * capacity,
 			preamble: Vec::with_capacity(32 * capacity),
 			heap: Vec::new(),
 		}
@@ -47,7 +49,7 @@ impl Sink {
 	/// Consume current Sink to produce a vector with content.
 	/// May panic if declared number of arguments does not match the resulting number of bytes should be produced.
 	pub fn finalize_panicking(self) -> Vec<u8> {
-		if self.preamble.len() != self.preamble.capacity() { panic!("Underflow of pushed parameters!"); }
+		if self.preamble.len() != self.capacity { panic!("Underflow of pushed parameters!"); }
 		let mut result = self.preamble;
 		let heap = self.heap;
 
