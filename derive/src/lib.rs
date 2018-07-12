@@ -270,8 +270,8 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> quote:
 				let ident = &signature.name;
 				let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
 				let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };
-				if !signature.return_type.is_empty() {
-					let return_count_literal = syn::Lit::Int(signature.return_type.len() as u64, syn::IntTy::Usize);
+				if !signature.return_types.is_empty() {
+					let return_count_literal = syn::Lit::Int(signature.return_types.len() as u64, syn::IntTy::Usize);
 					Some(quote! {
 						#hash_literal => {
 							#check_value_if_payable

@@ -113,7 +113,7 @@ impl<'a> From<&'a items::Signature> for FunctionEntry {
                     }
                 )
                 .collect(),
-            outputs: item.return_type
+            outputs: item.return_types
                 .iter()
                 .enumerate()
                 .map(|(idx, ty)| Argument { name: format!("returnValue{}", idx), type_: utils::canonical_ty(ty) })
