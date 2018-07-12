@@ -49,7 +49,7 @@ impl Sink {
 	/// Consume current Sink to produce a vector with content.
 	/// May panic if declared number of arguments does not match the resulting number of bytes should be produced.
 	pub fn finalize_panicking(self) -> Vec<u8> {
-		if self.preamble.len() != self.capacity { panic!("Underflow of pushed parameters!"); }
+		if self.preamble.len() != self.capacity { panic!("Underflow of pushed parameters {}/{}!", self.preamble.len(), self.capacity); }
 		let mut result = self.preamble;
 		let heap = self.heap;
 

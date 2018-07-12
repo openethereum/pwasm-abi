@@ -270,8 +270,8 @@ impl<T1: AbiType, T2: AbiType> AbiType for (T1, T2) {
 	}
 
 	fn encode(self, sink: &mut Sink) {
-		self.0.encode(sink);
-		self.1.encode(sink);
+		sink.push(self.0);
+		sink.push(self.1);
 	}
 
 	const IS_FIXED: bool = true;
@@ -283,9 +283,9 @@ impl<T1: AbiType, T2: AbiType, T3: AbiType> AbiType for (T1, T2, T3) {
 	}
 
 	fn encode(self, sink: &mut Sink) {
-		self.0.encode(sink);
-		self.1.encode(sink);
-		self.2.encode(sink);
+		sink.push(self.0);
+		sink.push(self.1);
+		sink.push(self.2);
 	}
 
 	const IS_FIXED: bool = true;
@@ -297,10 +297,10 @@ impl<T1: AbiType, T2: AbiType, T3: AbiType, T4: AbiType> AbiType for (T1, T2, T3
 	}
 
 	fn encode(self, sink: &mut Sink) {
-		self.0.encode(sink);
-		self.1.encode(sink);
-		self.2.encode(sink);
-		self.3.encode(sink);
+		sink.push(self.0);
+		sink.push(self.1);
+		sink.push(self.2);
+		sink.push(self.3);
 	}
 
 	const IS_FIXED: bool = true;
@@ -312,11 +312,11 @@ impl<T1: AbiType, T2: AbiType, T3: AbiType, T4: AbiType, T5: AbiType> AbiType fo
 	}
 
 	fn encode(self, sink: &mut Sink) {
-		self.0.encode(sink);
-		self.1.encode(sink);
-		self.2.encode(sink);
-		self.3.encode(sink);
-		self.4.encode(sink);
+		sink.push(self.0);
+		sink.push(self.1);
+		sink.push(self.2);
+		sink.push(self.3);
+		sink.push(self.4);
 	}
 
 	const IS_FIXED: bool = true;
@@ -328,12 +328,12 @@ impl<T1: AbiType, T2: AbiType, T3: AbiType, T4: AbiType, T5: AbiType, T6: AbiTyp
 	}
 
 	fn encode(self, sink: &mut Sink) {
-		self.0.encode(sink);
-		self.1.encode(sink);
-		self.2.encode(sink);
-		self.3.encode(sink);
-		self.4.encode(sink);
-		self.5.encode(sink);
+		sink.push(self.0);
+		sink.push(self.1);
+		sink.push(self.2);
+		sink.push(self.3);
+		sink.push(self.4);
+		sink.push(self.5);
 	}
 
 	const IS_FIXED: bool = true;
