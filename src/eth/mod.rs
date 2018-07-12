@@ -34,9 +34,11 @@ pub enum Error {
 /// Abi type trait
 pub trait AbiType : Sized {
 	/// Insantiate type from data stream
+	/// Should never be called manually! Use stream.pop()
 	fn decode(stream: &mut Stream) -> Result<Self, Error>;
 
 	/// Push type to data sink
+	/// Should never be called manually! Use sink.push(val)
 	fn encode(self, sink: &mut Sink);
 
 	/// Whether type has fixed length or not
