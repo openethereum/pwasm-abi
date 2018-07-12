@@ -21,7 +21,7 @@ pub struct Signature {
 	pub method_sig: syn::MethodSig,
 	pub hash: u32,
 	pub arguments: Vec<(syn::Pat, syn::Ty)>,
-	pub return_type: Option<syn::Ty>,
+	pub return_types: Vec<syn::Ty>,
 	pub is_constant: bool,
 	pub is_payable: bool,
 }
@@ -81,9 +81,16 @@ impl Interface {
 fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_constant: bool, is_payable: bool) -> Signature {
 	let arguments: Vec<(syn::Pat, syn::Ty)> = utils::iter_signature(&method_sig).collect();
 	let canonical = utils::canonical(&ident, &method_sig);
-	let return_type: Option<syn::Ty> = match method_sig.decl.output {
-		syn::FunctionRetTy::Default => None,
-		syn::FunctionRetTy::Ty(ref ty) => Some(ty.clone()),
+	let return_types: Vec<syn::Ty> = match method_sig.decl.output {
+		syn::FunctionRetTy::Default => Vec::new(),
+		syn::FunctionRetTy::Ty(ref ty) => {
+			match ty {
+				syn::Ty::Tup(ref tys) => {
+					tys.clone()
+				},
+				_ => vec![(ty.clone())],
+			}
+		},
 	};
 	let hash = utils::hash(&canonical);
 
@@ -93,7 +100,7 @@ fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_constant: bo
 		method_sig: method_sig,
 		canonical: canonical,
 		hash: hash,
-		return_type: return_type,
+		return_types: return_types,
 		is_constant: is_constant,
 		is_payable: is_payable,
 	}
