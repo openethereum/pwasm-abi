@@ -244,18 +244,13 @@ macro_rules! abi_type_fixed_impl {
 				let previous_position = stream.advance(32)?;
 				let slice = &stream.payload()[previous_position..stream.position()];
 				let mut result = [0u8; $num];
-				result.copy_from_slice(&slice[32-$num..32]);
-				for padding_byte in slice.iter().take(32-$num) {
-					if *padding_byte != 0 {
-						return Err(Error::InvalidPadding);
-					}
-				}
+				result.copy_from_slice(&slice[0..$num]);
 				Ok(result)
 			}
 
 			fn encode(self, sink: &mut Sink) {
 				let mut padded = [0u8; 32];
-				padded[32-$num..32].copy_from_slice(&self[..]);
+				padded[0..$num].copy_from_slice(&self[..]);
 				sink.preamble_mut().extend_from_slice(&padded[..]);
 			}
 
@@ -380,7 +375,7 @@ mod tests {
 	#[test]
 	fn fixed_array_padding() {
 		let data = &[
-			0u8, 1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+			1u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
 			0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8
 		];
 
@@ -404,8 +399,8 @@ mod tests {
 	#[test]
 	fn fixed_array_padding_2() {
 		let data = &[
-			0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
-			0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8
+			1u8, 2u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,
+			0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8
 		];
 
 		let mut stream = Stream::new(data);
