@@ -11,7 +11,7 @@ extern crate tiny_keccak;
 extern crate byteorder;
 extern crate parity_hash;
 extern crate serde;
-extern crate serde_json;
+extern crate serde_json_core;
 #[macro_use] extern crate serde_derive;
 
 #[cfg(not(feature="std"))]
