@@ -1,14 +1,8 @@
-#![cfg_attr(not(test), no_std)]
-#![cfg_attr(not(test), feature(alloc))]
-#![feature(proc_macro)]
+#![cfg_attr(not(feature="test"), no_std)]
+#![cfg_attr(not(feature="test"), feature(alloc))]
+#![feature(use_extern_macros)]
 #![feature(proc_macro_gen)]
 #![cfg(test)]
-
-#[cfg(not(test))]
-extern crate alloc;
-
-#[cfg(not(test))]
-use alloc::vec::Vec;
 
 extern crate pwasm_std;
 extern crate pwasm_ethereum;
@@ -32,6 +26,10 @@ use pwasm_abi::eth::EndpointInterface;
 use bigint::U256;
 use parity_hash::Address;
 
+pub mod types {
+	pub use bigint::U256;
+	pub use parity_hash::Address;
+}
 
 #[eth_abi(TestEndpoint, Client)]
 pub trait TestContract {
@@ -39,7 +37,7 @@ pub trait TestContract {
 
 	fn baz(&mut self, _p1: u32, _p2: bool);
 	fn boo(&mut self, _arg: u32) -> u32;
-	fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<U256>);
+	fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<::types::U256>);
 
 	#[event]
 	fn baz_fired(&mut self, indexed_p1: u32, p2: u32);

@@ -13,14 +13,14 @@ mod contract {
 
 	#[eth_abi(Endpoint, Client)]
 	pub trait TokenContract {
-		fn constructor(&mut self, total_supply: U256);
+		fn constructor(&mut self, total_supply: ::types::U256);
 
-		#[constant] fn balanceOf(&mut self, _owner: Address) -> U256;
-		#[constant] fn totalSupply(&mut self) -> U256;
+		#[constant] fn balanceOf(&mut self, _owner: ::types::Address) -> ::types::U256;
+		#[constant] fn totalSupply(&mut self) -> ::types::U256;
 
-		fn transfer(&mut self, _to: Address, _amount: U256) -> bool;
+		fn transfer(&mut self, _to: ::types::Address, _amount: ::types::U256) -> bool;
 
-		#[event] fn Transfer(&mut self, address_indexed: Address, amount: U256);
+		#[event] fn Transfer(&mut self, address_indexed: ::types::Address, amount: ::types::U256);
 	}
 
 	#[derive(Default)]
