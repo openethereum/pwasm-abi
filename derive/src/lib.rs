@@ -1,16 +1,15 @@
 //! Ethereum (Solidity) derivation for rust contracts (compiled to wasm or otherwise)
 #![feature(alloc)]
-#![feature(proc_macro)]
+#![feature(use_extern_macros)]
 #![recursion_limit="128"]
+#![deny(unused)]
 
 extern crate proc_macro;
-extern crate pwasm_abi as abi;
 extern crate syn;
 #[macro_use] extern crate quote;
 extern crate tiny_keccak;
 extern crate byteorder;
 extern crate parity_hash;
-extern crate serde;
 extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 
