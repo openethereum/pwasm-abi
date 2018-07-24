@@ -1,9 +1,70 @@
+#[cfg(feature = "std")]
 extern crate rustc_hex as hex;
 
-use self::hex::FromHex;
 use super::*;
 use bigint::U256;
 use lib::*;
+
+#[cfg(feature = "std")]
+mod hextest {
+	use eth::tests::hex::FromHex;
+	use super::super::*;
+	use lib::*;
+
+	#[test]
+	fn bytes() {
+		let encoded = ("".to_owned() +
+			"0000000000000000000000000000000000000000000000000000000000000020" +
+			"0000000000000000000000000000000000000000000000000000000000000002" +
+			"1234000000000000000000000000000000000000000000000000000000000000")
+			.from_hex().unwrap();
+
+		let mut stream = Stream::new(&encoded);
+
+		let bytes: Vec<u8> = stream.pop().unwrap();
+
+		assert_eq!(vec![0x12u8, 0x34], bytes);
+	}
+
+	#[test]
+	fn two_bytes() {
+		let encoded = ("".to_owned() +
+			"0000000000000000000000000000000000000000000000000000000000000040" +
+			"0000000000000000000000000000000000000000000000000000000000000080" +
+			"000000000000000000000000000000000000000000000000000000000000001f" +
+			"1000000000000000000000000000000000000000000000000000000000000200" +
+			"0000000000000000000000000000000000000000000000000000000000000020" +
+			"0010000000000000000000000000000000000000000000000000000000000002"
+		).from_hex().unwrap();
+
+		let mut stream = Stream::new(&encoded);
+
+		let bytes1: Vec<u8> = stream.pop().unwrap();
+		let bytes2: Vec<u8> = stream.pop().unwrap();
+
+		assert_eq!(bytes1, "10000000000000000000000000000000000000000000000000000000000002".from_hex().unwrap());
+		assert_eq!(bytes2, "0010000000000000000000000000000000000000000000000000000000000002".from_hex().unwrap());
+	}
+
+	#[test]
+	fn bytes_encode() {
+		assert_eq!(
+			super::single_encode(vec![0x12u8, 0x34]),
+			("".to_owned() +
+				"0000000000000000000000000000000000000000000000000000000000000020" +
+				"0000000000000000000000000000000000000000000000000000000000000002" +
+				"1234000000000000000000000000000000000000000000000000000000000000")
+				.from_hex().unwrap()
+		);
+	}
+
+}
+
+#[cfg(feature = "std")]
+macro_rules! assert_eq_core  { ($a:expr, $b:expr) => (assert_eq!($a, $b)) }
+
+#[cfg(not(feature = "std"))]
+macro_rules! assert_eq_core  { ($a:expr, $b:expr) => (assert!($a == $b, stringify!($a == $b))) }
 
 #[test]
 fn simple() {
@@ -17,41 +78,6 @@ fn simple() {
 	let val: u32 = stream.pop().unwrap();
 
 	assert_eq!(val, 69);
-}
-
-#[test]
-fn bytes() {
-	let encoded = ("".to_owned() +
-		"0000000000000000000000000000000000000000000000000000000000000020" +
-		"0000000000000000000000000000000000000000000000000000000000000002" +
-		"1234000000000000000000000000000000000000000000000000000000000000")
-		.from_hex().unwrap();
-
-	let mut stream = Stream::new(&encoded);
-
-	let bytes: Vec<u8> = stream.pop().unwrap();
-
-	assert_eq!(vec![0x12u8, 0x34], bytes);
-}
-
-#[test]
-fn two_bytes() {
-	let encoded = ("".to_owned() +
-		"0000000000000000000000000000000000000000000000000000000000000040" +
-		"0000000000000000000000000000000000000000000000000000000000000080" +
-		"000000000000000000000000000000000000000000000000000000000000001f" +
-		"1000000000000000000000000000000000000000000000000000000000000200" +
-		"0000000000000000000000000000000000000000000000000000000000000020" +
-		"0010000000000000000000000000000000000000000000000000000000000002"
-	).from_hex().unwrap();
-
-	let mut stream = Stream::new(&encoded);
-
-	let bytes1: Vec<u8> = stream.pop().unwrap();
-	let bytes2: Vec<u8> = stream.pop().unwrap();
-
-	assert_eq!(bytes1, "10000000000000000000000000000000000000000000000000000000000002".from_hex().unwrap());
-	assert_eq!(bytes2, "0010000000000000000000000000000000000000000000000000000000000002".from_hex().unwrap());
 }
 
 fn single_decode<T: super::AbiType>(payload: &[u8]) -> (T) {
@@ -84,24 +110,12 @@ fn single_encode<T: super::AbiType>(val: T) -> Vec<u8> {
 
 #[test]
 fn u32_encode() {
-	assert_eq!(
+	assert_eq_core!(
 		single_encode(69),
 		vec![
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x45
 		]
-	);
-}
-
-#[test]
-fn bytes_encode() {
-	assert_eq!(
-		single_encode(vec![0x12u8, 0x34]),
-		("".to_owned() +
-		"0000000000000000000000000000000000000000000000000000000000000020" +
-		"0000000000000000000000000000000000000000000000000000000000000002" +
-		"1234000000000000000000000000000000000000000000000000000000000000")
-		.from_hex().unwrap()
 	);
 }
 
@@ -161,9 +175,9 @@ fn sample2_decode() {
 
 	let (v1, v2, v3) = triple_decode::<Vec<u8>, bool, Vec<U256>>(&sample);
 
-	assert_eq!(v1, vec![100, 97, 118, 101]);
+	assert_eq_core!(v1, vec![100, 97, 118, 101]);
 	assert_eq!(v2, true);
-	assert_eq!(v3, vec![U256::from(1), U256::from(2), U256::from(3)]);
+	assert_eq_core!(v3, vec![U256::from(1), U256::from(2), U256::from(3)]);
 }
 
 #[test]
