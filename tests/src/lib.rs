@@ -26,18 +26,13 @@ use pwasm_abi::eth::EndpointInterface;
 use bigint::U256;
 use parity_hash::Address;
 
-pub mod types {
-	pub use bigint::U256;
-	pub use parity_hash::Address;
-}
-
 #[eth_abi(TestEndpoint, Client)]
 pub trait TestContract {
 	fn constructor(&mut self, _p: bool);
 
 	fn baz(&mut self, _p1: u32, _p2: bool);
 	fn boo(&mut self, _arg: u32) -> u32;
-	fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<::types::U256>);
+	fn sam(&mut self, _p1: Vec<u8>, _p2: bool, _p3: Vec<U256>);
 
 	#[event]
 	fn baz_fired(&mut self, indexed_p1: u32, p2: u32);

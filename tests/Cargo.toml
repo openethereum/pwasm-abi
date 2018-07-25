@@ -14,4 +14,4 @@ parity-hash = "1"
 
 [features]
 default = []
-test = ["pwasm-test", "pwasm-std/std", "pwasm-ethereum/std"]
+test = ["pwasm-test", "pwasm-std/std", "pwasm-ethereum/std", "pwasm-abi-derive/std"]

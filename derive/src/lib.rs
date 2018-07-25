@@ -13,14 +13,10 @@ extern crate parity_hash;
 extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 
-#[cfg(not(feature="std"))]
-extern crate alloc;
-
 mod items;
 mod utils;
 mod json;
 
-use alloc::vec::Vec;
 use proc_macro::TokenStream;
 
 use items::Item;
@@ -71,6 +67,10 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 							extern crate parity_hash;
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
+							extern crate pwasm_std;
+							use pwasm_std::hash::{Address, H256};
+							use pwasm_std::Vec;
+							use bigint::U256;
 							use #name_ident_use;
 							#endpoint
 						}
@@ -92,6 +92,10 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 							extern crate parity_hash;
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
+							extern crate pwasm_std;
+							use pwasm_std::Vec;
+							use pwasm_std::hash::{Address, H256};
+							use bigint::U256;
 							use #name_ident_use;
 							#endpoint
 							#client
