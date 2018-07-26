@@ -62,10 +62,8 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 						#intf
 						#[allow(non_snake_case)]
 						mod #mod_name_ident {
-							extern crate parity_hash;
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
-							extern crate pwasm_std;
 							use pwasm_abi::types::*;
 							use #name_ident_use;
 							#endpoint
@@ -84,10 +82,8 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 						#intf
 						#[allow(non_snake_case)]
 						mod #mod_name_ident {
-							extern crate parity_hash;
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
-							extern crate pwasm_std;
 							use pwasm_abi::types::*;
 							use #name_ident_use;
 							#endpoint
@@ -208,12 +204,12 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 	quote! {
 		pub struct #client_ident {
 			gas: Option<u64>,
-			address: parity_hash::Address,
-			value: Option<bigint::U256>,
+			address: Address,
+			value: Option<U256>,
 		}
 
 		impl #client_ident {
-			pub fn new(address: parity_hash::Address) -> Self {
+			pub fn new(address: Address) -> Self {
 				#client_ident {
 					gas: None,
 					address: address,
