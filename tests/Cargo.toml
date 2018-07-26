@@ -9,8 +9,6 @@ pwasm-test = { git = "https://github.com/paritytech/pwasm-test", optional = true
 pwasm-abi = { path = "..", default-features=false }
 pwasm-abi-derive = { path = "../derive" }
 pwasm-ethereum = "0.5"
-bigint = "4"
-parity-hash = "1"
 
 [features]
 default = []

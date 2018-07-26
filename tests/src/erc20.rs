@@ -1,14 +1,10 @@
-use bigint::U256;
-use parity_hash::Address;
-use pwasm_abi::eth::EndpointInterface;
-
 mod contract {
 	#![allow(non_snake_case)]
 	#![allow(dead_code)]
 
 	use pwasm_abi_derive::eth_abi;
-	use parity_hash::Address;
-	use bigint::U256;
+	use pwasm_abi::types::*;
+
 	use std::collections::HashMap;
 
 	#[eth_abi(Endpoint, Client)]
@@ -48,6 +44,9 @@ mod contract {
 	}
 }
 
+use pwasm_abi::eth::EndpointInterface;
+use pwasm_abi::types::*;
+
 // balanceOf(0x0)
 const SAMPLE1: &'static [u8] = &[
 	0x70, 0xa0, 0x82, 0x31,
@@ -57,7 +56,6 @@ const SAMPLE1: &'static [u8] = &[
 const SAMPLE2: &'static [u8] = &[
 	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
-
 
 #[test]
 fn call1() {

@@ -9,9 +9,7 @@ extern crate pwasm_std;
 extern crate pwasm_ethereum;
 extern crate pwasm_test;
 extern crate pwasm_abi;
-extern crate parity_hash;
 extern crate pwasm_abi_derive;
-extern crate bigint;
 
 use pwasm_test::{ext_get, ext_reset, Endpoint};
 
@@ -23,9 +21,7 @@ mod multiple_return;
 
 use pwasm_abi_derive::eth_abi;
 use pwasm_abi::eth::EndpointInterface;
-
-use bigint::U256;
-use parity_hash::Address;
+use pwasm_abi::types::*;
 
 #[eth_abi(TestEndpoint, Client)]
 pub trait TestContract {

@@ -177,7 +177,7 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 
 						#result_instance
 
-						pwasm_ethereum::call(self.gas.unwrap_or(pwasm_ethereum::gas_limit().into()), &self.address, self.value.clone().unwrap_or(bigint::U256::zero()), &payload, &mut result[..])
+						pwasm_ethereum::call(self.gas.unwrap_or(pwasm_ethereum::gas_limit().into()), &self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut result[..])
 							.expect("Call failed; todo: allow handling inside contracts");
 
 						#result_pop
@@ -222,7 +222,7 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 				self
 			}
 
-			pub fn value(mut self, val: bigint::U256) -> Self {
+			pub fn value(mut self, val: U256) -> Self {
 				self.value = Some(val);
 				self
 			}
