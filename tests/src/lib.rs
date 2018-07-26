@@ -1,3 +1,4 @@
+#![feature(extern_prelude)]
 #![cfg_attr(not(feature="test"), no_std)]
 #![cfg_attr(not(feature="test"), feature(alloc))]
 #![feature(use_extern_macros)]

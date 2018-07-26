@@ -62,14 +62,11 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 						#intf
 						#[allow(non_snake_case)]
 						mod #mod_name_ident {
-							extern crate bigint;
 							extern crate parity_hash;
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
 							extern crate pwasm_std;
-							use pwasm_std::hash::{Address, H256};
-							use pwasm_std::Vec;
-							use bigint::U256;
+							use pwasm_abi::types::*;
 							use #name_ident_use;
 							#endpoint
 						}
@@ -87,14 +84,11 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 						#intf
 						#[allow(non_snake_case)]
 						mod #mod_name_ident {
-							extern crate bigint;
 							extern crate parity_hash;
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
 							extern crate pwasm_std;
-							use pwasm_std::Vec;
-							use pwasm_std::hash::{Address, H256};
-							use bigint::U256;
+							use pwasm_abi::types::*;
 							use #name_ident_use;
 							#endpoint
 							#client

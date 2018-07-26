@@ -7,13 +7,21 @@
 
 extern crate byteorder;
 extern crate bigint;
-extern crate parity_hash;
+extern crate pwasm_std;
+
 
 #[cfg(not(feature="std"))]
 #[allow(unused)]
 #[macro_use] extern crate alloc;
 
 pub mod eth;
+
+/// Custom types which AbiType supports
+pub mod types {
+	pub use pwasm_std::Vec;
+	pub use pwasm_std::hash::*;
+	pub use bigint::*;
+}
 
 mod lib {
 
