@@ -2,8 +2,7 @@
 
 use lib::*;
 use super::{util, Stream, AbiType, Sink, Error};
-use parity_hash::{Address, H256};
-use bigint::U256;
+use super::types::*;
 
 impl AbiType for u32 {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {

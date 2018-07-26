@@ -14,6 +14,8 @@ pub use self::log::AsLog;
 pub use self::stream::Stream;
 pub use self::sink::Sink;
 
+use super::types;
+
 /// Error for decoding rust types from stream
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {

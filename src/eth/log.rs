@@ -1,8 +1,7 @@
 //! Log module
 
 use byteorder::{BigEndian, ByteOrder};
-use parity_hash::{H256, Address};
-use bigint::U256;
+use super::types::*;
 
 /// As log trait for how primitive types are represented as indexed arguments
 /// of the event log

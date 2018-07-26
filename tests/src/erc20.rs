@@ -1,26 +1,22 @@
-use bigint::U256;
-use parity_hash::Address;
-use pwasm_abi::eth::EndpointInterface;
-
 mod contract {
 	#![allow(non_snake_case)]
 	#![allow(dead_code)]
 
 	use pwasm_abi_derive::eth_abi;
-	use parity_hash::Address;
-	use bigint::U256;
+	use pwasm_abi::types::*;
+
 	use std::collections::HashMap;
 
 	#[eth_abi(Endpoint, Client)]
 	pub trait TokenContract {
-		fn constructor(&mut self, total_supply: ::types::U256);
+		fn constructor(&mut self, total_supply: U256);
 
-		#[constant] fn balanceOf(&mut self, _owner: ::types::Address) -> ::types::U256;
-		#[constant] fn totalSupply(&mut self) -> ::types::U256;
+		#[constant] fn balanceOf(&mut self, _owner: Address) -> U256;
+		#[constant] fn totalSupply(&mut self) -> U256;
 
-		fn transfer(&mut self, _to: ::types::Address, _amount: ::types::U256) -> bool;
+		fn transfer(&mut self, _to: Address, _amount: U256) -> bool;
 
-		#[event] fn Transfer(&mut self, address_indexed: ::types::Address, amount: ::types::U256);
+		#[event] fn Transfer(&mut self, address_indexed: Address, amount: U256);
 	}
 
 	#[derive(Default)]
@@ -48,6 +44,9 @@ mod contract {
 	}
 }
 
+use pwasm_abi::eth::EndpointInterface;
+use pwasm_abi::types::*;
+
 // balanceOf(0x0)
 const SAMPLE1: &'static [u8] = &[
 	0x70, 0xa0, 0x82, 0x31,
@@ -57,7 +56,6 @@ const SAMPLE1: &'static [u8] = &[
 const SAMPLE2: &'static [u8] = &[
 	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
-
 
 #[test]
 fn call1() {

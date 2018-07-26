@@ -2,7 +2,7 @@
 extern crate rustc_hex as hex;
 
 use super::*;
-use bigint::U256;
+use super::types::*;
 use lib::*;
 
 #[cfg(feature = "std")]

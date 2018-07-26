@@ -1,5 +1,4 @@
 //! Ethereum (Solidity) derivation for rust contracts (compiled to wasm or otherwise)
-#![feature(alloc)]
 #![feature(use_extern_macros)]
 #![recursion_limit="128"]
 #![deny(unused)]
@@ -13,14 +12,10 @@ extern crate parity_hash;
 extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 
-#[cfg(not(feature="std"))]
-extern crate alloc;
-
 mod items;
 mod utils;
 mod json;
 
-use alloc::vec::Vec;
 use proc_macro::TokenStream;
 
 use items::Item;
@@ -67,10 +62,9 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 						#intf
 						#[allow(non_snake_case)]
 						mod #mod_name_ident {
-							extern crate bigint;
-							extern crate parity_hash;
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
+							use pwasm_abi::types::*;
 							use #name_ident_use;
 							#endpoint
 						}
@@ -88,10 +82,9 @@ pub fn eth_abi(args: TokenStream, input: TokenStream) -> TokenStream {
 						#intf
 						#[allow(non_snake_case)]
 						mod #mod_name_ident {
-							extern crate bigint;
-							extern crate parity_hash;
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
+							use pwasm_abi::types::*;
 							use #name_ident_use;
 							#endpoint
 							#client
@@ -184,7 +177,7 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 
 						#result_instance
 
-						pwasm_ethereum::call(self.gas.unwrap_or(pwasm_ethereum::gas_limit().into()), &self.address, self.value.clone().unwrap_or(bigint::U256::zero()), &payload, &mut result[..])
+						pwasm_ethereum::call(self.gas.unwrap_or(pwasm_ethereum::gas_limit().into()), &self.address, self.value.clone().unwrap_or(U256::zero()), &payload, &mut result[..])
 							.expect("Call failed; todo: allow handling inside contracts");
 
 						#result_pop
@@ -211,12 +204,12 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 	quote! {
 		pub struct #client_ident {
 			gas: Option<u64>,
-			address: parity_hash::Address,
-			value: Option<bigint::U256>,
+			address: Address,
+			value: Option<U256>,
 		}
 
 		impl #client_ident {
-			pub fn new(address: parity_hash::Address) -> Self {
+			pub fn new(address: Address) -> Self {
 				#client_ident {
 					gas: None,
 					address: address,
@@ -229,7 +222,7 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> quote::Tok
 				self
 			}
 
-			pub fn value(mut self, val: bigint::U256) -> Self {
+			pub fn value(mut self, val: U256) -> Self {
 				self.value = Some(val);
 				self
 			}
