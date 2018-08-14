@@ -120,12 +120,12 @@ impl AbiType for U256 {
 
 impl AbiType for Address {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
-		let arr = <[u8; 20]>::decode(stream)?;
+		let arr = <H256>::decode(stream)?;
 		Ok(arr.into())
 	}
 
 	fn encode(self, sink: &mut Sink) {
-		self.0.encode(sink)
+		H256::from(self).encode(sink)
 	}
 
 	const IS_FIXED: bool = true;
