@@ -16,17 +16,19 @@ exclude = [ "tests/*", "derive/*" ]
 panic = "abort"
 
 [dependencies]
-rustc-hex = { version = "1.0.0", optional = true }
 pwasm-std = "0.10"
 
-[dependencies.bigint]
-version = "4.4.0"
+[dependencies.uint]
+version = "0.3"
 default-features = false
 
 [dependencies.byteorder]
 version = "1.2.3"
 default-features = false
 
+[dev-dependencies]
+hex-literal = "0.1"
+
 [features]
 default = []
-std = ["rustc-hex", "bigint/std", "pwasm-std/std"]
+std = ["uint/std", "pwasm-std/std"]

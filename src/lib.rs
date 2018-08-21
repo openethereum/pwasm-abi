@@ -6,9 +6,12 @@
 #![deny(unused)]
 
 extern crate byteorder;
-extern crate bigint;
+extern crate uint;
 extern crate pwasm_std;
 
+#[cfg(test)]
+#[macro_use]
+extern crate hex_literal;
 
 #[cfg(not(feature="std"))]
 #[allow(unused)]
@@ -20,7 +23,7 @@ pub mod eth;
 pub mod types {
 	pub use pwasm_std::Vec;
 	pub use pwasm_std::hash::*;
-	pub use bigint::*;
+	pub use uint::U256;
 }
 
 mod lib {
