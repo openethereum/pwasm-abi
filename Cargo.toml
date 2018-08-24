@@ -32,3 +32,4 @@ hex-literal = "0.1"
 [features]
 default = []
 std = ["uint/std", "pwasm-std/std"]
+strict = []

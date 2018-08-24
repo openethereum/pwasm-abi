@@ -258,80 +258,134 @@ macro_rules! abi_type_fixed_impl {
 	}
 }
 
-impl<T1: AbiType, T2: AbiType> AbiType for (T1, T2) {
-	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
-		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
-	}
+macro_rules! tuple_impls {
+	($(
+		$Tuple:ident {
+			$(($idx:tt) -> $T:ident)+
+		}
+	)+) => {
+		$(
+			impl<$($T:AbiType),+> AbiType for ($($T,)+) {
+				fn decode(_stream: &mut Stream) -> Result<Self, Error> {
+					panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
+				}
 
-	fn encode(self, sink: &mut Sink) {
-		sink.push(self.0);
-		sink.push(self.1);
-	}
+				fn encode(self, sink: &mut Sink) {
+					$(sink.push(self.$idx);)+
+				}
 
-	const IS_FIXED: bool = true;
+				const IS_FIXED: bool = true;
+
+			}
+		)+
+	}
 }
 
-impl<T1: AbiType, T2: AbiType, T3: AbiType> AbiType for (T1, T2, T3) {
-	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
-		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
+tuple_impls! {
+	Tuple1 {
+		(0) -> A
 	}
-
-	fn encode(self, sink: &mut Sink) {
-		sink.push(self.0);
-		sink.push(self.1);
-		sink.push(self.2);
+	Tuple2 {
+		(0) -> A
+		(1) -> B
 	}
-
-	const IS_FIXED: bool = true;
+	Tuple3 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+	}
+	Tuple4 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+		(3) -> D
+	}
+	Tuple5 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+		(3) -> D
+		(4) -> E
+	}
+	Tuple6 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+		(3) -> D
+		(4) -> E
+		(5) -> F
+	}
+	Tuple7 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+		(3) -> D
+		(4) -> E
+		(5) -> F
+		(6) -> G
+	}
+	Tuple8 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+		(3) -> D
+		(4) -> E
+		(5) -> F
+		(6) -> G
+		(7) -> H
+	}
+	Tuple9 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+		(3) -> D
+		(4) -> E
+		(5) -> F
+		(6) -> G
+		(7) -> H
+		(8) -> I
+	}
+	Tuple10 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+		(3) -> D
+		(4) -> E
+		(5) -> F
+		(6) -> G
+		(7) -> H
+		(8) -> I
+		(9) -> J
+	}
+	Tuple11 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+		(3) -> D
+		(4) -> E
+		(5) -> F
+		(6) -> G
+		(7) -> H
+		(8) -> I
+		(9) -> J
+		(10) -> K
+	}
+	Tuple12 {
+		(0) -> A
+		(1) -> B
+		(2) -> C
+		(3) -> D
+		(4) -> E
+		(5) -> F
+		(6) -> G
+		(7) -> H
+		(8) -> I
+		(9) -> J
+		(10) -> K
+		(11) -> L
+	}
 }
 
-impl<T1: AbiType, T2: AbiType, T3: AbiType, T4: AbiType> AbiType for (T1, T2, T3, T4) {
-	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
-		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
-	}
-
-	fn encode(self, sink: &mut Sink) {
-		sink.push(self.0);
-		sink.push(self.1);
-		sink.push(self.2);
-		sink.push(self.3);
-	}
-
-	const IS_FIXED: bool = true;
-}
-
-impl<T1: AbiType, T2: AbiType, T3: AbiType, T4: AbiType, T5: AbiType> AbiType for (T1, T2, T3, T4, T5) {
-	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
-		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
-	}
-
-	fn encode(self, sink: &mut Sink) {
-		sink.push(self.0);
-		sink.push(self.1);
-		sink.push(self.2);
-		sink.push(self.3);
-		sink.push(self.4);
-	}
-
-	const IS_FIXED: bool = true;
-}
-
-impl<T1: AbiType, T2: AbiType, T3: AbiType, T4: AbiType, T5: AbiType, T6: AbiType> AbiType for (T1, T2, T3, T4, T5, T6) {
-	fn decode(_stream: &mut Stream) -> Result<Self, Error> {
-		panic!("Tuples allow only encoding, not decoding (for supporting multiple return types)")
-	}
-
-	fn encode(self, sink: &mut Sink) {
-		sink.push(self.0);
-		sink.push(self.1);
-		sink.push(self.2);
-		sink.push(self.3);
-		sink.push(self.4);
-		sink.push(self.5);
-	}
-
-	const IS_FIXED: bool = true;
-}
 
 abi_type_fixed_impl!(1);
 abi_type_fixed_impl!(2);
