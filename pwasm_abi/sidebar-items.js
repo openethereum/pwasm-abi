@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["eth","Legacy Ethereum-like ABI generator"],["types","Custom types which AbiType supports"]]});
