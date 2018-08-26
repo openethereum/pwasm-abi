@@ -3,7 +3,7 @@ sudo: required
 language:
 - rust
 script:
-- cargo build --release --verbose
+- cargo build --release --verbose --features=strict
 - cargo test --verbose --features std
 - cargo test --verbose --manifest-path=tests/Cargo.toml --features=test
 

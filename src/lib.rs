@@ -3,7 +3,7 @@
 #![cfg_attr(not(feature="std"), no_std)]
 #![cfg_attr(not(feature="std"), feature(alloc))]
 #![warn(missing_docs)]
-#![deny(unused)]
+#![cfg_attr(feature="strict", deny(unused))]
 
 extern crate byteorder;
 extern crate uint;
