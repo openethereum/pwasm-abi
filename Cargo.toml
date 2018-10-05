@@ -18,8 +18,8 @@ panic = "abort"
 [dependencies]
 pwasm-std = "0.10"
 
-[dependencies.uint]
-version = "0.3"
+[dependencies.ethereum-types]
+version = "0.4"
 default-features = false
 
 [dependencies.byteorder]
@@ -31,5 +31,5 @@ hex-literal = "0.1"
 
 [features]
 default = []
-std = ["uint/std", "pwasm-std/std"]
+std = ["ethereum-types/std", "pwasm-std/std"]
 strict = []

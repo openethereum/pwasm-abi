@@ -6,7 +6,7 @@
 #![cfg_attr(feature="strict", deny(unused))]
 
 extern crate byteorder;
-extern crate uint;
+extern crate ethereum_types;
 extern crate pwasm_std;
 
 #[cfg(test)]
@@ -23,7 +23,7 @@ pub mod eth;
 pub mod types {
 	pub use pwasm_std::Vec;
 	pub use pwasm_std::hash::*;
-	pub use uint::U256;
+	pub use ethereum_types::U256;
 }
 
 mod lib {
