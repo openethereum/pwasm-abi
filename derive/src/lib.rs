@@ -8,7 +8,7 @@ extern crate syn;
 #[macro_use] extern crate quote;
 extern crate tiny_keccak;
 extern crate byteorder;
-extern crate parity_hash;
+extern crate ethereum_types;
 extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 

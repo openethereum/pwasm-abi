@@ -1,5 +1,7 @@
 use {quote, syn, utils};
 
+use ethereum_types::H256;
+
 pub struct Interface {
 	name: String,
 	constructor: Option<Signature>,
@@ -165,8 +167,8 @@ impl quote::ToTokens for Item {
 						name,
 						method_sig,
 						{
-							let keccak = utils::keccak(&event.canonical);
-							let hash_bytes = keccak.as_ref().iter().map(|b| {
+							let keccak: H256 = utils::keccak(&event.canonical);
+							let hash_bytes = (&keccak).iter().map(|b| {
 								syn::Lit::Int(*b as u64, syn::IntTy::U8)
 							});
 

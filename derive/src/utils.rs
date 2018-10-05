@@ -1,6 +1,6 @@
 use {syn, quote};
 use tiny_keccak::Keccak;
-use parity_hash::H256;
+use ethereum_types::H256;
 use byteorder::{BigEndian, ByteOrder};
 
 pub struct SignatureIterator<'a> {
@@ -145,6 +145,6 @@ pub fn keccak(s: &str) -> H256 {
 }
 
 pub fn hash(s: &str) -> u32 {
-	let keccak = keccak(s);
-	BigEndian::read_u32(&keccak.as_ref()[0..4])
+	let keccak: H256 = keccak(s);
+	BigEndian::read_u32(&keccak[0..4])
 }
