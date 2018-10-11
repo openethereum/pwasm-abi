@@ -22,6 +22,12 @@ use proc_macro2::{Span};
 
 use items::Item;
 
+/// Extracts arguments from the macro attribute as vector of strings.
+/// 
+/// # Example
+/// 
+/// Given the token stream that is represented by the string `"(Foo, Bar)"`
+/// then this extracts the strings `Foo` and `Bar` out of it.
 fn parse_args_to_vec(args: proc_macro2::TokenStream) -> Vec<String> {
 	args.to_string()
 		.split(',')
@@ -29,44 +35,49 @@ fn parse_args_to_vec(args: proc_macro2::TokenStream) -> Vec<String> {
 		.collect()
 }
 
+/// Arguments given to the `eth_abi` attribute macro.
 struct Args {
+	/// The required name of the endpoint.
 	endpoint_name: String,
+	/// The optional name of the client.
 	client_name: Option<String>
 }
 
 impl Args {
+	/// Returns the given endpoint name.
 	pub fn endpoint_name(&self) -> &str {
 		&self.endpoint_name
 	}
 
+	/// Returns the optional client name.
 	pub fn client_name(&self) -> Option<&str> {
 		self.client_name.as_ref().map(|s| s.as_str())
 	}
 }
 
+/// Parses the given token stream as arguments for the `eth_abi` attribute macro.
 fn parse_args(args: proc_macro2::TokenStream) -> Args {
 	let args = parse_args_to_vec(args);
 
 	assert!(1 <= args.len() && args.len() <= 2,
-		"[err-01]: Expect one argument for endpoint name and an optional argument for client name.");
+		"[err01]: Expect one argument for endpoint name and an optional argument for client name.");
+	println!("eth_abi::args = {:?}", args);
 
-	let endpoint_name = args.get(0).unwrap();
-	let client_name = args.get(1);
+	let endpoint_name = args.get(0).unwrap().to_owned();
+	let client_name = args.get(1).map(|s| s.to_owned());
 
-	Args{
-		endpoint_name: endpoint_name.to_owned(),
-		client_name: client_name.map(|s| s.to_owned()) }
+	Args{ endpoint_name, client_name }
 }
 
 /// Derive abi for given trait. Should provide one or two arguments:
 /// dispatch structure name and client structure name.
 ///
-/// # Example
+/// # Example: Using just one argument
 ///
 /// #[eth_abi(Endpoint)]
 /// trait Contract { }
 ///
-/// # Example
+/// # Example: Using two arguments
 ///
 /// #[eth_abi(Endpoint2, Client2)]
 /// trait Contract2 { }
