@@ -159,10 +159,9 @@ impl Item {
 					return Item::Other(syn::TraitItem::Method(method_trait_item))
 				}
 				if has_attribute(&method_trait_item.attrs, "event") {
-					Self::event_from_trait_item(method_trait_item.sig)
-				} else {
-					Self::signature_from_trait_item(method_trait_item)
+					return Self::event_from_trait_item(method_trait_item.sig)
 				}
+				Self::signature_from_trait_item(method_trait_item)
 			},
 			trait_item => Item::Other(trait_item)
 		}

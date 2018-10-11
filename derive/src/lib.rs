@@ -18,15 +18,44 @@ mod items;
 mod utils;
 mod json;
 
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::{Span};
 
 use items::Item;
 
-fn parse_args(args: TokenStream) -> Vec<String> {
+fn parse_args_to_vec(args: proc_macro2::TokenStream) -> Vec<String> {
 	args.to_string()
 		.split(',')
 		.map(|w| w.trim_matches(&['(', ')', '"', ' '][..]).to_string())
 		.collect()
+}
+
+struct Args {
+	endpoint_name: String,
+	client_name: Option<String>
+}
+
+impl Args {
+	pub fn endpoint_name(&self) -> &str {
+		&self.endpoint_name
+	}
+
+	pub fn client_name(&self) -> Option<&str> {
+		self.client_name.as_ref().map(|s| s.as_str())
+	}
+}
+
+fn parse_args(args: proc_macro2::TokenStream) -> Args {
+	let args = parse_args_to_vec(args);
+
+	assert!(1 <= args.len() && args.len() <= 2,
+		"[err-01]: Expect one argument for endpoint name and an optional argument for client name.");
+
+	let endpoint_name = args.get(0).unwrap();
+	let client_name = args.get(1);
+
+	Args{
+		endpoint_name: endpoint_name.to_owned(),
+		client_name: client_name.map(|s| s.to_owned()) }
 }
 
 /// Derive abi for given trait. Should provide one or two arguments:
@@ -50,63 +79,53 @@ pub fn eth_abi(
 {
     let args: proc_macro2::TokenStream = args.into();
 
-	let ast = parse_macro_input!(input as syn::Item);
-
 	let args = parse_args(args);
-	let endpoint_name = args.get(0).expect("Failed to parse an endpoint name argument");
-	let intf = items::Interface::from_item(ast);
+	let intf = items::Interface::from_item(
+		parse_macro_input!(input as syn::Item));
 
-	let output: proc_macro2::TokenStream = match args.len() {
-		arg_count @ 1 | arg_count @ 2 => {
-			write_json_abi(&intf);
+	write_json_abi(&intf);
 
-			let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
-			let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
-			let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
-			match arg_count {
-				1 => {
-					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
-					let endpoint_ident = syn::Ident::new(&endpoint_name, Span::call_site());
-					quote! {
-						#intf
-						#[allow(non_snake_case)]
-						mod #mod_name_ident {
-							extern crate pwasm_ethereum;
-							extern crate pwasm_abi;
-							use pwasm_abi::types::*;
-							use super::#name_ident_use;
-							#endpoint
-						}
-						pub use self::#mod_name_ident::#endpoint_ident;
-					}
-				},
-				2 => {
-					let client_name = args.get(1).expect("Failed to parse an client name argument");
-					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
-					let client = generate_eth_client(client_name, &intf);
-					let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
-					let endpoint_name_ident = syn::Ident::new(&endpoint_name, Span::call_site());
-					let client_name_ident = syn::Ident::new(&client_name, Span::call_site());
-					quote! {
-						#intf
-						#[allow(non_snake_case)]
-						mod #mod_name_ident {
-							extern crate pwasm_ethereum;
-							extern crate pwasm_abi;
-							use pwasm_abi::types::*;
-							use super::#name_ident_use;
-							#endpoint
-							#client
-						}
-						pub use self::#mod_name_ident::#endpoint_name_ident;
-						pub use self::#mod_name_ident::#client_name_ident;
-					}
-				},
-				_ => { unreachable!(); }
+	let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
+	let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
+	let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
+
+	let output: proc_macro2::TokenStream = match args.client_name() {
+		None => {
+			let endpoint = generate_eth_endpoint(args.endpoint_name(), &intf);
+			let endpoint_ident = syn::Ident::new(args.endpoint_name(), Span::call_site());
+			quote! {
+				#intf
+				#[allow(non_snake_case)]
+				mod #mod_name_ident {
+					extern crate pwasm_ethereum;
+					extern crate pwasm_abi;
+					use pwasm_abi::types::*;
+					use super::#name_ident_use;
+					#endpoint
+				}
+				pub use self::#mod_name_ident::#endpoint_ident;
 			}
-		}
-		len => {
-			panic!("eth_abi marco takes one or two comma-separated arguments, passed {}", len);
+		},
+		Some(client_name) => {
+			let endpoint = generate_eth_endpoint(args.endpoint_name(), &intf);
+			let client = generate_eth_client(client_name, &intf);
+			let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
+			let endpoint_name_ident = syn::Ident::new(args.endpoint_name(), Span::call_site());
+			let client_name_ident = syn::Ident::new(&client_name, Span::call_site());
+			quote! {
+				#intf
+				#[allow(non_snake_case)]
+				mod #mod_name_ident {
+					extern crate pwasm_ethereum;
+					extern crate pwasm_abi;
+					use pwasm_abi::types::*;
+					use super::#name_ident_use;
+					#endpoint
+					#client
+				}
+				pub use self::#mod_name_ident::#endpoint_name_ident;
+				pub use self::#mod_name_ident::#client_name_ident;
+			}
 		}
 	};
 

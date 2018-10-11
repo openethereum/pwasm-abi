@@ -185,7 +185,6 @@ mod contract {
 			self.p = p1;
 		}
 	}
-
 }
 
 #[test]
