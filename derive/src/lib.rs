@@ -96,51 +96,77 @@ pub fn eth_abi(
 
 	write_json_abi(&intf);
 
-	let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
-	let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
-	let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
-
 	let output: proc_macro2::TokenStream = match args.client_name() {
 		None => {
-			let endpoint = generate_eth_endpoint(args.endpoint_name(), &intf);
-			let endpoint_ident = syn::Ident::new(args.endpoint_name(), Span::call_site());
-			quote! {
-				#intf
-				#[allow(non_snake_case)]
-				mod #mod_name_ident {
-					extern crate pwasm_ethereum;
-					extern crate pwasm_abi;
-					use pwasm_abi::types::*;
-					use super::#name_ident_use;
-					#endpoint
-				}
-				pub use self::#mod_name_ident::#endpoint_ident;
-			}
+			generate_eth_endpoint_wrapper(&intf, args.endpoint_name())
 		},
 		Some(client_name) => {
-			let endpoint = generate_eth_endpoint(args.endpoint_name(), &intf);
-			let client = generate_eth_client(client_name, &intf);
-			let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
-			let endpoint_name_ident = syn::Ident::new(args.endpoint_name(), Span::call_site());
-			let client_name_ident = syn::Ident::new(&client_name, Span::call_site());
-			quote! {
-				#intf
-				#[allow(non_snake_case)]
-				mod #mod_name_ident {
-					extern crate pwasm_ethereum;
-					extern crate pwasm_abi;
-					use pwasm_abi::types::*;
-					use super::#name_ident_use;
-					#endpoint
-					#client
-				}
-				pub use self::#mod_name_ident::#endpoint_name_ident;
-				pub use self::#mod_name_ident::#client_name_ident;
-			}
+			generate_eth_endpoint_and_client_wrapper(&intf, args.endpoint_name(), client_name)
 		}
 	};
 
     output.into()
+}
+
+fn generate_eth_endpoint_wrapper(
+	intf: &items::Interface,
+	endpoint_name: &str
+)
+	-> proc_macro2::TokenStream
+{
+	// === REFACTORING TARGET ===
+	let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
+	let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
+	let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
+	// === REFACTORING TARGET ===
+
+	let endpoint_toks = generate_eth_endpoint(endpoint_name, intf);
+	let endpoint_ident = syn::Ident::new(endpoint_name, Span::call_site());
+	quote! {
+		#intf
+		#[allow(non_snake_case)]
+		mod #mod_name_ident {
+			extern crate pwasm_ethereum;
+			extern crate pwasm_abi;
+			use pwasm_abi::types::*;
+			use super::#name_ident_use;
+			#endpoint_toks
+		}
+		pub use self::#mod_name_ident::#endpoint_ident;
+	}
+}
+
+fn generate_eth_endpoint_and_client_wrapper(
+	intf: &items::Interface,
+	endpoint_name: &str,
+	client_name: &str
+)
+	-> proc_macro2::TokenStream
+{
+	// === REFACTORING TARGET ===
+	let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
+	let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
+	let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
+	// === REFACTORING TARGET ===
+
+	let endpoint_toks = generate_eth_endpoint(endpoint_name, &intf);
+	let client_toks = generate_eth_client(client_name, &intf);
+	let endpoint_name_ident = syn::Ident::new(endpoint_name, Span::call_site());
+	let client_name_ident = syn::Ident::new(&client_name, Span::call_site());
+	quote! {
+		#intf
+		#[allow(non_snake_case)]
+		mod #mod_name_ident {
+			extern crate pwasm_ethereum;
+			extern crate pwasm_abi;
+			use pwasm_abi::types::*;
+			use super::#name_ident_use;
+			#endpoint_toks
+			#client_toks
+		}
+		pub use self::#mod_name_ident::#endpoint_name_ident;
+		pub use self::#mod_name_ident::#client_name_ident;
+	}
 }
 
 fn write_json_abi(intf: &items::Interface) {
