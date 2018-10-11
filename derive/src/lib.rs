@@ -60,13 +60,13 @@ pub fn eth_abi(
 		arg_count @ 1 | arg_count @ 2 => {
 			write_json_abi(&intf);
 
-			let name_ident_use = syn::Ident::new(&format!("super::{}", intf.name()), Span::call_site());
+			let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
 			let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
 			let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
 			match arg_count {
 				1 => {
 					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
-					let endpoint_use = syn::Ident::new(&format!("self::{}::{}", mod_name, endpoint_name), Span::call_site());
+					let endpoint_ident = syn::Ident::new(&endpoint_name, Span::call_site());
 					quote! {
 						#intf
 						#[allow(non_snake_case)]
@@ -74,18 +74,19 @@ pub fn eth_abi(
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
 							use pwasm_abi::types::*;
-							use #name_ident_use;
+							use super::#name_ident_use;
 							#endpoint
 						}
-						pub use #endpoint_use;
+						pub use self::#mod_name_ident::#endpoint_ident;
 					}
 				},
 				2 => {
 					let client_name = args.get(1).expect("Failed to parse an client name argument");
 					let endpoint = generate_eth_endpoint(&endpoint_name, &intf);
 					let client = generate_eth_client(client_name, &intf);
-					let endpoint_use = syn::Ident::new(&format!("self::{}::{}", mod_name, endpoint_name), Span::call_site());
-					let client_use = syn::Ident::new(&format!("self::{}::{}", mod_name, client_name), Span::call_site());
+					let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
+					let endpoint_name_ident = syn::Ident::new(&endpoint_name, Span::call_site());
+					let client_name_ident = syn::Ident::new(&client_name, Span::call_site());
 					quote! {
 						#intf
 						#[allow(non_snake_case)]
@@ -93,12 +94,12 @@ pub fn eth_abi(
 							extern crate pwasm_ethereum;
 							extern crate pwasm_abi;
 							use pwasm_abi::types::*;
-							use #name_ident_use;
+							use super::#name_ident_use;
 							#endpoint
 							#client
 						}
-						pub use #endpoint_use;
-						pub use #client_use;
+						pub use self::#mod_name_ident::#endpoint_name_ident;
+						pub use self::#mod_name_ident::#client_name_ident;
 					}
 				},
 				_ => { unreachable!(); }
