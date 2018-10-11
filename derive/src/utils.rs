@@ -108,7 +108,7 @@ fn push_canonical_primitive(target: &mut String, seg: &syn::PathSegment) {
 		"String"  => target.push_str("string"),
 		"bool"    => target.push_str("bool"),
 		"Vec"     => push_canonical_vec(target, &seg.arguments),
-		val       => panic!("Unable to handle param of type{}: not supported by abi", val)
+		val       => panic!("[e1] Unable to handle param of type {}: not supported by abi", val)
 	}
 }
 
@@ -136,7 +136,7 @@ pub fn push_canonical(target: &mut String, ty: &syn::Type) {
 			panic!("Unsupported! Use variable-size arrays")
 		},
 		// ref val @ _ => panic!("Unable to handle param of type {:?}: not supported by abi", val),
-		other_type => panic!("Unable to handle param of type {:?}: not supported by abi", other_type),
+		other_type => panic!("[e2] Unable to handle param of type {:?}: not supported by abi", other_type),
 	}
 }
 
