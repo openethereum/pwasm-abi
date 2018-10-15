@@ -118,7 +118,7 @@ fn push_canonical_path(target: &mut String, type_path: &syn::TypePath) {
 	push_canonical_primitive(target, *last_path.value())
 }
 
-pub fn push_canonical(target: &mut String, ty: &syn::Type) {
+fn push_canonical(target: &mut String, ty: &syn::Type) {
 	match ty {
 		syn::Type::Path(type_path) if type_path.qself.is_none() => {
 			push_canonical_path(target, &type_path)
@@ -135,7 +135,6 @@ pub fn push_canonical(target: &mut String, ty: &syn::Type) {
 
 			panic!("Unsupported! Use variable-size arrays")
 		},
-		// ref val @ _ => panic!("Unable to handle param of type {:?}: not supported by abi", val),
 		other_type => panic!("[e2] Unable to handle param of type {:?}: not supported by abi", other_type),
 	}
 }
