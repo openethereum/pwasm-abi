@@ -81,14 +81,15 @@ fn push_canonical_vec(target: &mut String, args: &syn::PathArguments) {
 			let last_arg = gen_args.args.last().unwrap();
 			let last_type = last_arg.value();
 			if let syn::GenericArgument::Type(syn::Type::Path(type_path)) = last_type {
-				if type_path.qself.is_some()
+				return if type_path.qself.is_none()
 					&& type_path.path.segments.last().unwrap().value().ident == "u8"
 				{
 					target.push_str("bytes");
-					return;
 				}
-				push_canonical_path(target, type_path);
-				target.push_str("[]")
+				else {
+					push_canonical_path(target, type_path);
+					target.push_str("[]");
+				}
 			}
 			panic!("Unsupported generic arguments")
 		},
