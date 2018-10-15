@@ -159,6 +159,11 @@ pub fn canonical(name: &syn::Ident, method_sig: &syn::MethodSig) -> String {
 	s
 }
 
+/// Returns the Keccak hash (256-bits) of the given string slice.
+/// 
+/// # Note
+/// 
+/// The given string slice will be interpreted as bytes array.
 pub fn keccak(s: &str) -> H256 {
 	let mut keccak = Keccak::new_keccak256();
 	let mut res = H256::zero();
@@ -167,6 +172,12 @@ pub fn keccak(s: &str) -> H256 {
 	res
 }
 
+/// Returns the first 4 bytes of the Keccak hash (256-bits)
+/// for the given string slice.
+/// 
+/// # Note
+/// 
+/// The given string slice will be interpreted as bytes array.
 pub fn hash(s: &str) -> u32 {
 	let keccak = keccak(s);
 	BigEndian::read_u32(&keccak.as_ref()[0..4])
