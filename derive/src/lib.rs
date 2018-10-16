@@ -162,11 +162,14 @@ fn generate_eth_endpoint_wrapper(
 	intf: &items::Interface,
 	endpoint_name: &str,
 ) -> proc_macro2::TokenStream {
-	// === REFACTORING TARGET ===
+
+	// FIXME: Code duplication with `generate_eth_endpoint_and_client_wrapper`
+	//        We might want to fix this, however it is not critical.
+	//        >>>
 	let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
 	let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
 	let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
-	// === REFACTORING TARGET ===
+	// FIXME: <<<
 
 	let endpoint_toks = generate_eth_endpoint(endpoint_name, intf);
 	let endpoint_ident = syn::Ident::new(endpoint_name, Span::call_site());
@@ -190,11 +193,14 @@ fn generate_eth_endpoint_and_client_wrapper(
 	endpoint_name: &str,
 	client_name: &str,
 ) -> proc_macro2::TokenStream {
-	// === REFACTORING TARGET ===
+
+	// FIXME: Code duplication with `generate_eth_endpoint_and_client_wrapper`
+	//        We might want to fix this, however it is not critical.
+	//        >>>
 	let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
 	let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
 	let mod_name_ident = syn::Ident::new(&mod_name, Span::call_site());
-	// === REFACTORING TARGET ===
+	// FIXME: <<<
 
 	let endpoint_toks = generate_eth_endpoint(endpoint_name, &intf);
 	let client_toks = generate_eth_client(client_name, &intf);
