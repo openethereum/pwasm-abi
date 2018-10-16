@@ -23,31 +23,76 @@ pub struct Event {
 	pub data: Vec<(syn::Pat, syn::Type)>,
 }
 
+/// Represents a function declared in the contracts interface.
+/// 
+/// Since this is basically just the declaration of such as function
+/// without implementation we refer to it as being a signature.
 #[derive(Clone)]
 pub struct Signature {
+	/// The name of this signature.
 	pub name: syn::Ident,
+	/// The canonicalized string representation of this signature.
 	pub canonical: String,
+	/// The parameter information of this signature.
 	pub method_sig: syn::MethodSig,
+	/// The function selector hash (4 bytes) of this signature.
 	pub hash: u32,
+	/// The arguments of this signature.
 	pub arguments: Vec<(syn::Pat, syn::Type)>,
+	/// The return type of this signature.
 	pub return_types: Vec<syn::Type>,
+	/// If this signature is constant.
+	/// 
+	/// # Note
+	/// 
+	/// A constant signature cannot mutate chain state.
 	pub is_constant: bool,
+	/// If this signature is payable.
+	/// 
+	/// # Note
+	/// 
+	/// Only a payable signature can be invoked with value.
 	pub is_payable: bool,
 }
 
+/// An item within a contract trait.
 pub enum Item {
+	/// An invokable function.
 	Signature(Signature),
+	/// An event.
 	Event(Event),
+	/// Some trait item that is unsupported and unhandled as of now.
 	Other(syn::TraitItem),
 }
 
+/// The entire interface that is being defined by the attributed trait.
 pub struct Interface {
+	/// The name of the contract trait.
 	name: String,
+	/// The constructor signature.
+	/// 
+	/// # Note
+	/// 
+	/// This is simply the signature with the identifier being equal to `constructor`.
 	constructor: Option<Signature>,
+	/// The set of trait items.
+	/// 
+	/// # Note
+	/// 
+	/// These are either
+	/// - `Signature`: A function declaration
+	/// - `Event`: An event
+	/// - `Other`: Some unsupported and unhandled trait item
 	items: Vec<Item>,
 }
 
 impl Item {
+	/// Returns the name of `self`.
+	/// 
+	/// # Note
+	/// 
+	/// Only returns a name if it is a supported kind of item.
+	/// Only `Signature` and `Event` kinds are supported.
 	fn name(&self) -> Option<&syn::Ident> {
 		use Item::*;
 		match *self {
