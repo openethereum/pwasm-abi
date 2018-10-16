@@ -99,17 +99,20 @@ fn push_canonical_vec(target: &mut String, args: &syn::PathArguments) {
 
 fn push_canonical_primitive(target: &mut String, seg: &syn::PathSegment) {
 	match seg.ident.to_string().as_str() {
-		"u32"     => target.push_str("uint32"),
-		"i32"     => target.push_str("int32"),
-		"u64"     => target.push_str("uint64"),
-		"i64"     => target.push_str("int64"),
-		"U256"    => target.push_str("uint256"),
-		"H256"    => target.push_str("uint256"),
+		"u32" => target.push_str("uint32"),
+		"i32" => target.push_str("int32"),
+		"u64" => target.push_str("uint64"),
+		"i64" => target.push_str("int64"),
+		"U256" => target.push_str("uint256"),
+		"H256" => target.push_str("uint256"),
 		"Address" => target.push_str("address"),
-		"String"  => target.push_str("string"),
-		"bool"    => target.push_str("bool"),
-		"Vec"     => push_canonical_vec(target, &seg.arguments),
-		val       => panic!("[e1] Unable to handle param of type {}: not supported by abi", val)
+		"String" => target.push_str("string"),
+		"bool" => target.push_str("bool"),
+		"Vec" => push_canonical_vec(target, &seg.arguments),
+		val => panic!(
+			"[e1] Unable to handle param of type {}: not supported by abi",
+			val
+		),
 	}
 }
 

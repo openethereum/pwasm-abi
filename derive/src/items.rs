@@ -87,9 +87,15 @@ impl Interface {
 	}
 }
 
-fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_constant: bool, is_payable: bool) -> Signature {
+fn into_signature(
+	ident: syn::Ident,
+	method_sig: syn::MethodSig,
+	is_constant: bool,
+	is_payable: bool
+)
+	-> Signature
+{
 	let arguments: Vec<(syn::Pat, syn::Type)> = utils::iter_signature(&method_sig).collect();
-	let canonical = utils::canonical(&ident, &method_sig);
 	let return_types: Vec<syn::Type> = match method_sig.decl.output.clone() {
 		syn::ReturnType::Default => Vec::new(),
 		syn::ReturnType::Type(_, ty) => {
@@ -101,6 +107,7 @@ fn into_signature(ident: syn::Ident, method_sig: syn::MethodSig, is_constant: bo
 			}
 		},
 	};
+	let canonical = utils::canonical(&ident, &method_sig);
 	let hash = utils::hash(&canonical);
 
 	Signature {

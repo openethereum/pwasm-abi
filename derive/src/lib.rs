@@ -1,6 +1,6 @@
 //! Ethereum (Solidity) derivation for rust contracts (compiled to wasm or otherwise)
 #![feature(use_extern_macros)]
-#![recursion_limit="128"]
+#![recursion_limit = "128"]
 #![deny(unused)]
 
 extern crate proc_macro;
@@ -23,9 +23,9 @@ use proc_macro2::{Span};
 use items::Item;
 
 /// Extracts arguments from the macro attribute as vector of strings.
-/// 
+///
 /// # Example
-/// 
+///
 /// Given the token stream that is represented by the string `"(Foo, Bar)"`
 /// then this extracts the strings `Foo` and `Bar` out of it.
 fn parse_args_to_vec(args: proc_macro2::TokenStream) -> Vec<String> {
@@ -40,7 +40,7 @@ struct Args {
 	/// The required name of the endpoint.
 	endpoint_name: String,
 	/// The optional name of the client.
-	client_name: Option<String>
+	client_name: Option<String>,
 }
 
 impl Args {
@@ -59,26 +59,31 @@ impl Args {
 fn parse_args(args: proc_macro2::TokenStream) -> Args {
 	let args = parse_args_to_vec(args);
 
-	assert!(1 <= args.len() && args.len() <= 2,
-		"[err01]: Expect one argument for endpoint name and an optional argument for client name.");
-	println!("eth_abi::args = {:?}", args);
+	assert!(
+		1 <= args.len() && args.len() <= 2,
+		"[err01]: Expect one argument for endpoint name and an optional argument for client name."
+	);
 
 	let endpoint_name = args.get(0).unwrap().to_owned();
 	let client_name = args.get(1).map(|s| s.to_owned());
 
-	Args{ endpoint_name, client_name }
+	Args {
+		endpoint_name,
+		client_name,
+	}
 }
 
 /// Writes generated abi JSON file to destination in default target directory.
-/// 
+///
 /// # Note
-/// 
+///
 /// The generated JSON information may be used by offline tools around WebJS for example.
 fn write_json_abi(intf: &items::Interface) {
-	use std::{fs, path, env};
+	use std::{env, fs, path};
 
 	let target = {
-		let mut target = path::PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".to_owned()));
+		let mut target =
+			path::PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".to_owned()));
 		target.push("target");
 		target.push("json");
 		fs::create_dir_all(&target)
@@ -94,19 +99,19 @@ fn write_json_abi(intf: &items::Interface) {
 }
 
 /// Derive of the Ethereum/Solidity ABI for the given trait interface.
-/// 
+///
 /// The first parameter represents the identifier of the generated endpoint
 /// implementation. The seconds parameter is optional and represents the
 /// identifier of the generated client implementation.
-/// 
+///
 /// # System Description
-/// 
+///
 /// ## Endpoint
-/// 
+///
 /// Converts ABI encoded payload into a called function with its parameters.
-/// 
+///
 /// ## Client
-/// 
+///
 /// Opposite of an endpoint that allows users (clients) to build up queries
 /// in the form of a payload to functions of a contract by a generated interface.
 ///
@@ -116,7 +121,7 @@ fn write_json_abi(intf: &items::Interface) {
 /// #[eth_abi(Endpoint)]
 /// trait Contract { }
 /// ```
-/// 
+///
 /// Creates an endpoint implementation named `Endpoint` for the
 /// interface defined in the `Contract` trait.
 ///
@@ -126,44 +131,37 @@ fn write_json_abi(intf: &items::Interface) {
 /// #[eth_abi(Endpoint2, Client2)]
 /// trait Contract2 { }
 /// ```
-/// 
+///
 /// Creates an endpoint implementation named `Endpoint2` and a
 /// client implementation named `Client2` for the interface
 /// defined in the `Contract2` trait.
 #[proc_macro_attribute]
 pub fn eth_abi(
 	args: proc_macro::TokenStream,
-	input: proc_macro::TokenStream
-)
-	-> proc_macro::TokenStream
-{
-    let args: proc_macro2::TokenStream = args.into();
+	input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+	let args: proc_macro2::TokenStream = args.into();
 
 	let args = parse_args(args);
-	let intf = items::Interface::from_item(
-		parse_macro_input!(input as syn::Item));
+	let intf = items::Interface::from_item(parse_macro_input!(input as syn::Item));
 
 	write_json_abi(&intf);
 
 	let output: proc_macro2::TokenStream = match args.client_name() {
-		None => {
-			generate_eth_endpoint_wrapper(&intf, args.endpoint_name())
-		},
+		None => generate_eth_endpoint_wrapper(&intf, args.endpoint_name()),
 		Some(client_name) => {
 			generate_eth_endpoint_and_client_wrapper(&intf, args.endpoint_name(), client_name)
 		}
 	};
 
-    output.into()
+	output.into()
 }
 
 /// Generates the eth abi code in case of a single provided endpoint.
 fn generate_eth_endpoint_wrapper(
 	intf: &items::Interface,
-	endpoint_name: &str
-)
-	-> proc_macro2::TokenStream
-{
+	endpoint_name: &str,
+) -> proc_macro2::TokenStream {
 	// === REFACTORING TARGET ===
 	let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
 	let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
@@ -190,10 +188,8 @@ fn generate_eth_endpoint_wrapper(
 fn generate_eth_endpoint_and_client_wrapper(
 	intf: &items::Interface,
 	endpoint_name: &str,
-	client_name: &str
-)
-	-> proc_macro2::TokenStream
-{
+	client_name: &str,
+) -> proc_macro2::TokenStream {
 	// === REFACTORING TARGET ===
 	let name_ident_use = syn::Ident::new(intf.name(), Span::call_site());
 	let mod_name = format!("pwasm_abi_impl_{}", &intf.name().clone());
