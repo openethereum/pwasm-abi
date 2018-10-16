@@ -143,7 +143,8 @@ fn push_canonical(target: &mut String, ty: &syn::Type) {
 	}
 }
 
-pub fn canonical_ty(ty: &syn::Type) -> String {
+/// Returns the canonicalized string representation for the given type.
+pub fn canonicalize_type(ty: &syn::Type) -> String {
 	let mut result = String::new();
 	push_canonical(&mut result, ty);
 	result
