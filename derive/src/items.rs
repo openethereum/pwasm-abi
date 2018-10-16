@@ -145,7 +145,10 @@ fn has_attribute(attrs: &[syn::Attribute], name: &str) -> bool {
 
 impl Item {
 	fn event_from_trait_item(method_sig: syn::MethodSig) -> Self {
-		assert!(method_sig.ident.to_string() != "constructor", "The constructor can't be an event");
+		assert!(
+			method_sig.ident != "constructor",
+			"The constructor can't be an event"
+		);
 		let (indexed, non_indexed) = utils::iter_signature(&method_sig)
 			.partition(|&(ref pat, _)| quote! { #pat }.to_string().starts_with("indexed_"));
 		let canonical = utils::canonicalize_fn(&method_sig.ident, &method_sig);
@@ -162,13 +165,23 @@ impl Item {
 	fn signature_from_trait_item(method_trait_item: syn::TraitItemMethod) -> Self {
 		let constant = has_attribute(&method_trait_item.attrs, "constant");
 		let payable = has_attribute(&method_trait_item.attrs, "payable");
-		assert!(!(constant && payable),
-			format!("Method {} cannot be constant and payable at the same time", method_trait_item.sig.ident.to_string()
-		));
-		assert!(!(method_trait_item.sig.ident.to_string() == "constructor" && constant), "Constructor can't be constant");
-		Item::Signature(
-			into_signature(method_trait_item.sig.ident.clone(), method_trait_item.sig, constant, payable)
-		)
+		assert!(
+			!(constant && payable),
+			format!(
+				"Method {} cannot be constant and payable at the same time",
+				method_trait_item.sig.ident.to_string()
+			)
+		);
+		assert!(
+			!(method_trait_item.sig.ident.to_string() == "constructor" && constant),
+			"Constructor can't be constant"
+		);
+		Item::Signature(into_signature(
+			method_trait_item.sig.ident.clone(),
+			method_trait_item.sig,
+			constant,
+			payable,
+		))
 	}
 
 	pub fn from_trait_item(source: syn::TraitItem) -> Self {
