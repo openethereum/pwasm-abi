@@ -120,7 +120,7 @@ fn into_signature(
 		},
 	};
 	let canonical = utils::canonical(&ident, &method_sig);
-	let hash = utils::hash(&canonical);
+	let hash = utils::function_selector(&canonical);
 
 	Signature {
 		name: ident,

@@ -172,12 +172,9 @@ pub fn keccak(bytes: &[u8]) -> H256 {
 }
 
 /// Returns the first 4 bytes of the Keccak hash (256-bits)
-/// for the given string slice.
-/// 
-/// # Note
-/// 
-/// The given string slice will be interpreted as bytes array.
-pub fn hash(s: &str) -> u32 {
-	let keccak = keccak(s.as_bytes());
+/// for the given canonical function signature representation
+/// represented as string slice.
+pub fn function_selector(canonical_fn_sig: &str) -> u32 {
+	let keccak = keccak(canonical_fn_sig.as_bytes());
 	BigEndian::read_u32(&keccak.as_ref()[0..4])
 }
