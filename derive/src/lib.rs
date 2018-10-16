@@ -343,15 +343,21 @@ fn generate_eth_client(client_name: &str, intf: &items::Interface) -> proc_macro
 }
 
 fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> proc_macro2::TokenStream {
-	let check_value_code = quote! {
-		if pwasm_ethereum::value() > 0.into() {
-			panic!("Unable to accept value in non-payable constructor call");
+	fn check_value_if_payable_toks(is_payable: bool) -> proc_macro2::TokenStream {
+		if is_payable {
+			return quote!{}
 		}
-	};
+		quote!{
+			if pwasm_ethereum::value() > 0.into() {
+				panic!("Unable to accept value in non-payable constructor call");
+			}
+		}
+	}
+
 	let ctor_branch = intf.constructor().map(
 		|signature| {
 			let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
-			let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };
+			let check_value_if_payable = check_value_if_payable_toks(signature.is_payable);
 			quote! {
 				#check_value_if_payable
 				let mut stream = pwasm_abi::eth::Stream::new(payload);
@@ -369,7 +375,7 @@ fn generate_eth_endpoint(endpoint_name: &str, intf: &items::Interface) -> proc_m
 					syn::LitInt::new(signature.hash as u64, syn::IntSuffix::U32, Span::call_site()));
 				let ident = &signature.name;
 				let arg_types = signature.arguments.iter().map(|&(_, ref ty)| quote! { #ty });
-				let check_value_if_payable = if signature.is_payable { quote! {} } else { quote! {#check_value_code} };
+				let check_value_if_payable = check_value_if_payable_toks(signature.is_payable);
 				if !signature.return_types.is_empty() {
 					let return_count_literal = syn::Lit::Int(
 						syn::LitInt::new(signature.return_types.len() as u64, syn::IntSuffix::Usize, Span::call_site()));
