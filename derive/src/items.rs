@@ -3,11 +3,23 @@ use {quote, syn, utils};
 use quote::TokenStreamExt;
 use proc_macro2::{self, Span};
 
+/// Represents an event of a smart contract.
 pub struct Event {
+	/// The name of the event.
 	pub name: syn::Ident,
+	/// The canonalized string representation used by the keccak hash
+	/// in order to retrieve the first 4 bytes required upon calling.
 	pub canonical: String,
+	/// The signature of the event.
 	pub method_sig: syn::MethodSig,
+	/// Indexed parameters.
+	/// 
+	/// # Note
+	/// 
+	/// Only up to 4 different parameters can be indexed
+	/// for the same event.
 	pub indexed: Vec<(syn::Pat, syn::Type)>,
+	/// Non-indexed parameters.
 	pub data: Vec<(syn::Pat, syn::Type)>,
 }
 
