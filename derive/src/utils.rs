@@ -75,7 +75,7 @@ fn push_int_const_expr(target: &mut String, expr: &syn::Expr) {
 	}
 }
 
-fn push_canonical_vec(target: &mut String, args: &syn::PathArguments) {
+fn push_canonicalized_vec(target: &mut String, args: &syn::PathArguments) {
 	match args {
 		syn::PathArguments::AngleBracketed(gen_args) => {
 			let last_arg = gen_args.args.last().unwrap();
@@ -87,7 +87,7 @@ fn push_canonical_vec(target: &mut String, args: &syn::PathArguments) {
 					target.push_str("bytes");
 				}
 				else {
-					push_canonical_path(target, type_path);
+					push_canonicalized_path(target, type_path);
 					target.push_str("[]");
 				}
 			}
@@ -97,7 +97,7 @@ fn push_canonical_vec(target: &mut String, args: &syn::PathArguments) {
 	}
 }
 
-fn push_canonical_primitive(target: &mut String, seg: &syn::PathSegment) {
+fn push_canonicalized_primitive(target: &mut String, seg: &syn::PathSegment) {
 	match seg.ident.to_string().as_str() {
 		"u32" => target.push_str("uint32"),
 		"i32" => target.push_str("int32"),
@@ -108,7 +108,7 @@ fn push_canonical_primitive(target: &mut String, seg: &syn::PathSegment) {
 		"Address" => target.push_str("address"),
 		"String" => target.push_str("string"),
 		"bool" => target.push_str("bool"),
-		"Vec" => push_canonical_vec(target, &seg.arguments),
+		"Vec" => push_canonicalized_vec(target, &seg.arguments),
 		val => panic!(
 			"[e1] Unable to handle param of type {}: not supported by abi",
 			val
@@ -116,16 +116,16 @@ fn push_canonical_primitive(target: &mut String, seg: &syn::PathSegment) {
 	}
 }
 
-fn push_canonical_path(target: &mut String, type_path: &syn::TypePath) {
+fn push_canonicalized_path(target: &mut String, type_path: &syn::TypePath) {
 	assert!(type_path.qself.is_none(), "Unsupported type path for canonicalization!");
 	let last_path = type_path.path.segments.last().unwrap();
-	push_canonical_primitive(target, *last_path.value())
+	push_canonicalized_primitive(target, *last_path.value())
 }
 
-fn push_canonical(target: &mut String, ty: &syn::Type) {
+fn push_canonicalized_type(target: &mut String, ty: &syn::Type) {
 	match ty {
 		syn::Type::Path(type_path) if type_path.qself.is_none() => {
-			push_canonical_path(target, &type_path)
+			push_canonicalized_path(target, &type_path)
 		},
 		syn::Type::Array(type_array) => {
 			// Special cases for `bytesN`
@@ -146,7 +146,7 @@ fn push_canonical(target: &mut String, ty: &syn::Type) {
 /// Returns the canonicalized string representation for the given type.
 pub fn canonicalize_type(ty: &syn::Type) -> String {
 	let mut result = String::new();
-	push_canonical(&mut result, ty);
+	push_canonicalized_type(&mut result, ty);
 	result
 }
 
@@ -163,7 +163,7 @@ pub fn canonicalize_fn(name: &syn::Ident, method_sig: &syn::MethodSig) -> String
 	s.push('(');
 	let total_len = method_sig.decl.inputs.len();
 	for (i, (_, ty)) in iter_signature(method_sig).enumerate() {
-		push_canonical(&mut s, &ty);
+		push_canonicalized_type(&mut s, &ty);
 		if i != total_len-2 { s.push(','); }
 	}
 	s.push(')');
