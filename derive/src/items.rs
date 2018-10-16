@@ -198,7 +198,7 @@ impl quote::ToTokens for Item {
 						name,
 						method_sig,
 						{
-							let keccak = utils::keccak(&event.canonical);
+							let keccak = utils::keccak(&event.canonical.as_bytes());
 							let hash_bytes = keccak.as_ref().iter().map(|b| {
 								syn::Lit::Int(syn::LitInt::new(*b as u64, syn::IntSuffix::U8, Span::call_site() ))
 							});
