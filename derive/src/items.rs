@@ -119,7 +119,7 @@ fn into_signature(
 			}
 		},
 	};
-	let canonical = utils::canonical(&ident, &method_sig);
+	let canonical = utils::canonicalize_fn(&ident, &method_sig);
 	let hash = utils::function_selector(&canonical);
 
 	Signature {
@@ -148,7 +148,7 @@ impl Item {
 		assert!(method_sig.ident.to_string() != "constructor", "The constructor can't be an event");
 		let (indexed, non_indexed) = utils::iter_signature(&method_sig)
 			.partition(|&(ref pat, _)| quote! { #pat }.to_string().starts_with("indexed_"));
-		let canonical = utils::canonical(&method_sig.ident, &method_sig);
+		let canonical = utils::canonicalize_fn(&method_sig.ident, &method_sig);
 		let event = Event {
 			name: method_sig.ident.clone(),
 			canonical: canonical,

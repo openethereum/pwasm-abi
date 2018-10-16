@@ -149,7 +149,14 @@ pub fn canonical_ty(ty: &syn::Type) -> String {
 	result
 }
 
-pub fn canonical(name: &syn::Ident, method_sig: &syn::MethodSig) -> String {
+/// Returns the canonicalized string representation for the function
+/// with the given name `name` and method signature `method_sig`.
+/// 
+/// # Note
+/// 
+/// The result can be used by `function_selector` in order to retrieve
+/// the function selector for the associated function.
+pub fn canonicalize_fn(name: &syn::Ident, method_sig: &syn::MethodSig) -> String {
 	let mut s = String::new();
 	s.push_str(&name.to_string());
 	s.push('(');
