@@ -6,13 +6,13 @@
 extern crate proc_macro;
 extern crate proc_macro2;
 
-#[macro_use] extern crate syn;
-#[macro_use] extern crate quote;
+#[macro_use]extern crate syn;
+#[macro_use]extern crate quote;
 extern crate tiny_keccak;
 extern crate byteorder;
 extern crate parity_hash;
 extern crate serde_json;
-#[macro_use] extern crate serde_derive;
+#[macro_use]extern crate serde_derive;
 
 mod items;
 mod utils;
@@ -22,25 +22,37 @@ use proc_macro2::{Span};
 
 use items::Item;
 
-/// Extracts arguments from the macro attribute as vector of strings.
-///
-/// # Example
-///
-/// Given the token stream that is represented by the string `"(Foo, Bar)"`
-/// then this extracts the strings `Foo` and `Bar` out of it.
-fn parse_args_to_vec(args: proc_macro2::TokenStream) -> Vec<String> {
-	args.to_string()
-		.split(',')
-		.map(|w| w.trim_matches(&['(', ')', '"', ' '][..]).to_string())
-		.collect()
-}
-
 /// Arguments given to the `eth_abi` attribute macro.
 struct Args {
 	/// The required name of the endpoint.
 	endpoint_name: String,
 	/// The optional name of the client.
 	client_name: Option<String>,
+}
+
+/// Extracts `eth_abi` argument information from the given `syn::AttributeArgs`.
+impl From<syn::AttributeArgs> for Args {
+	fn from(attr_args: syn::AttributeArgs) -> Self {
+		if attr_args.len() == 0 {
+			panic!("[eth_abi] error: Expected at least 1 argument for the endpoint identifier");
+		}
+		if attr_args.len() > 2 {
+			panic!("[eth_abi] error: Expected at most 2 arguments; one for endpoint identifier and optional client identifier");
+		}
+		let endpoint_name = if let syn::NestedMeta::Meta(syn::Meta::Word(ident)) = attr_args.get(0).unwrap() {
+			ident.to_string()
+		} else {
+			panic!("[eth_abi] error: Expected an identifier (e.g. Foo) for the first parameter");
+		};
+		let client_name = attr_args.get(1).map(|meta| {
+			if let syn::NestedMeta::Meta(syn::Meta::Word(ident)) = meta {
+				ident.to_string()
+			} else {
+				panic!("[eth_abi] error: Expected an identifier (e.g. Bar) for the second parameter");
+			}
+		});
+		Args{ endpoint_name, client_name }
+	}
 }
 
 impl Args {
@@ -52,24 +64,6 @@ impl Args {
 	/// Returns the optional client name.
 	pub fn client_name(&self) -> Option<&str> {
 		self.client_name.as_ref().map(|s| s.as_str())
-	}
-}
-
-/// Parses the given token stream as arguments for the `eth_abi` attribute macro.
-fn parse_args(args: proc_macro2::TokenStream) -> Args {
-	let args = parse_args_to_vec(args);
-
-	assert!(
-		1 <= args.len() && args.len() <= 2,
-		"[err01]: Expect one argument for endpoint name and an optional argument for client name."
-	);
-
-	let endpoint_name = args.get(0).unwrap().to_owned();
-	let client_name = args.get(1).map(|s| s.to_owned());
-
-	Args {
-		endpoint_name,
-		client_name,
 	}
 }
 
@@ -140,9 +134,7 @@ pub fn eth_abi(
 	args: proc_macro::TokenStream,
 	input: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-	let args: proc_macro2::TokenStream = args.into();
-
-	let args = parse_args(args);
+	let args = Args::from(parse_macro_input!(args as syn::AttributeArgs));
 	let intf = items::Interface::from_item(parse_macro_input!(input as syn::Item));
 
 	write_json_abi(&intf);

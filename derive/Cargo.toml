@@ -16,7 +16,7 @@ panic = "abort"
 
 [dependencies]
 quote = "0.6.8"
-syn = { version = "0.15", features = ["full", "extra-traits"] }
+syn = { version = "0.15.12", features = ["full", "extra-traits"] }
 proc-macro2 = "0.4"
 
 tiny-keccak = { version = "1.4.2", default-features = false }
