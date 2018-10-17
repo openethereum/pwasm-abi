@@ -7,3 +7,5 @@ Cargo.lock
 
 # Metadata of CLion
 /.idea/
+
+**/.DS_Store
