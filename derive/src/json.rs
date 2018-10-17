@@ -80,7 +80,7 @@ impl<'a> From<&'a items::Event> for EventEntry {
                 .map(|&(ref pat, ref ty)|
                     EventInput {
                         name: quote! { #pat }.to_string(),
-                        type_: utils::canonical_ty(ty),
+                        type_: utils::canonicalize_type(ty),
                         indexed: true,
                     }
                 )
@@ -90,7 +90,7 @@ impl<'a> From<&'a items::Event> for EventEntry {
                         .map(|&(ref pat, ref ty)|
                             EventInput {
                                 name: quote! { #pat }.to_string(),
-                                type_: utils::canonical_ty(ty),
+                                type_: utils::canonicalize_type(ty),
                                 indexed: false,
                             }
                         )
@@ -109,14 +109,14 @@ impl<'a> From<&'a items::Signature> for FunctionEntry {
                 .map(|&(ref pat, ref ty)|
                     Argument {
                         name: quote! { #pat }.to_string(),
-                        type_: utils::canonical_ty(ty),
+                        type_: utils::canonicalize_type(ty),
                     }
                 )
                 .collect(),
             outputs: item.return_types
                 .iter()
                 .enumerate()
-                .map(|(idx, ty)| Argument { name: format!("returnValue{}", idx), type_: utils::canonical_ty(ty) })
+                .map(|(idx, ty)| Argument { name: format!("returnValue{}", idx), type_: utils::canonicalize_type(ty) })
                 .collect(),
             constant: item.is_constant,
         }

@@ -1,13 +1,26 @@
 dist: trusty
+cache: cargo
 sudo: required
-language:
-- rust
-script:
-- cargo build --release --verbose --features=strict
-- cargo test --verbose --features std
-- cargo test --verbose --manifest-path=tests/Cargo.toml --features=test
 
-after_success: |
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+
+matrix:
+  allow_failures:
+    - rust: stable
+    - rust: beta
+
+script:
+- |
+  cargo check --verbose --release --features=strict &&
+  cargo test --verbose --release --features=std &&
+  cargo test --verbose --manifest-path=tests/Cargo.toml --features=test
+
+after_success:
+- |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
   cargo doc --all --no-deps &&

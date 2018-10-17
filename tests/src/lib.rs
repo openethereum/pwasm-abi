@@ -2,7 +2,7 @@
 #![cfg_attr(not(feature="test"), no_std)]
 #![cfg_attr(not(feature="test"), feature(alloc))]
 #![feature(use_extern_macros)]
-#![feature(proc_macro_gen)]
+#![feature(proc_macro_hygiene)]
 #![cfg(test)]
 
 extern crate pwasm_std;
@@ -185,7 +185,6 @@ mod contract {
 			self.p = p1;
 		}
 	}
-
 }
 
 #[test]

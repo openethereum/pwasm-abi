@@ -1,3 +1,9 @@
 /target/
 **/*.rs.bk
 Cargo.lock
+
+# Metadata of Visual Studio Code
+/.vscode/
+
+# Metadata of CLion
+/.idea/
