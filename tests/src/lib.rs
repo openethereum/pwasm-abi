@@ -5,8 +5,6 @@
 #![feature(proc_macro_hygiene)]
 #![cfg(test)]
 
-// extern crate compiletest_rs as compiletest;
-
 extern crate pwasm_std;
 extern crate pwasm_ethereum;
 extern crate pwasm_test;

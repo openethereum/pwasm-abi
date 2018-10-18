@@ -14,6 +14,7 @@ extern crate parity_hash;
 extern crate serde_json;
 #[macro_use]extern crate serde_derive;
 
+mod error;
 mod items;
 mod utils;
 mod json;
