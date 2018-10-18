@@ -6,13 +6,19 @@
 extern crate proc_macro;
 extern crate proc_macro2;
 
-#[macro_use]extern crate syn;
-#[macro_use]extern crate quote;
-extern crate tiny_keccak;
+#[macro_use]
+extern crate syn;
+
+#[macro_use]
+extern crate quote;
+
 extern crate byteorder;
 extern crate parity_hash;
 extern crate serde_json;
-#[macro_use]extern crate serde_derive;
+extern crate tiny_keccak;
+
+#[macro_use]
+extern crate serde_derive;
 
 mod error;
 mod items;
@@ -118,9 +124,7 @@ pub fn eth_abi(
 
 	let output = match impl_eth_abi(args_toks, input_toks) {
 		Ok(output) => output,
-		Err(err) => {
-			panic!("[eth_abi] encountered error: {}", err)
-		}
+		Err(err) => panic!("[eth_abi] encountered error: {}", err),
 	};
 
 	output.into()
@@ -148,7 +152,6 @@ fn generate_eth_endpoint_wrapper(
 	intf: &items::Interface,
 	endpoint_name: &str,
 ) -> Result<proc_macro2::TokenStream> {
-
 	// FIXME: Code duplication with `generate_eth_endpoint_and_client_wrapper`
 	//        We might want to fix this, however it is not critical.
 	//        >>>
