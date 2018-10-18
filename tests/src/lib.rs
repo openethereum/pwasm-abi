@@ -16,4 +16,4 @@ mod arrays;
 mod trivia;
 mod payable;
 mod multiple_return;
-mod detail;
+mod general;
