@@ -1,11 +1,13 @@
 use std;
 
+use json::JsonError;
+
 /// The result type for this procedural macro.
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 /// Represents errors that may be encountered in
 /// invokations of this procedural macro.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct Error {
     /// The kind of this error.
 	kind: ErrorKind
@@ -13,8 +15,10 @@ pub(crate) struct Error {
 
 /// Kinds of errors that may be encountered in invokations
 /// of this procedural macro.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) enum ErrorKind {
+    /// An error that occured upon a JSON operation.
+    JsonError(JsonError),
     /// When there was an invalid number of arguments passed to `eth_abi`.
 	InvalidNumberOfArguments{
         /// The number of found arguments.
@@ -25,6 +29,12 @@ pub(crate) enum ErrorKind {
         /// The index of the malformatted argument.
 		index: usize
 	}
+}
+
+impl From<JsonError> for Error {
+    fn from(json_err: JsonError) -> Self {
+        Error::from_kind(ErrorKind::JsonError(json_err))
+    }
 }
 
 impl Error {
@@ -64,6 +74,9 @@ impl Error {
 impl std::fmt::Display for Error {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
 		match self.kind() {
+            ErrorKind::JsonError(err) => {
+                write!(f, "{}", err)
+            }
 			ErrorKind::InvalidNumberOfArguments{ found } => {
 				write!(f, "found {} arguments passed to eth_abi but expected 1 or 2", found)
 			},
@@ -77,6 +90,7 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {
 	fn description(&self) -> &str {
 		match self.kind() {
+            ErrorKind::JsonError(err) => err.description(),
 			ErrorKind::InvalidNumberOfArguments{ .. } => {
 				"encountered an invalid number of arguments passed to eth_abi: expected 1 or 2"
 			},
