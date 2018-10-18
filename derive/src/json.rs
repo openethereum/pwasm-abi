@@ -12,65 +12,65 @@ pub type JsonResult<T> = std::result::Result<T, JsonError>;
 /// Errors that may occur during JSON operations.
 #[derive(Debug)]
 pub enum JsonError {
-    FailedToCreateDirectory(io::Error),
-    FailedToCreateJsonFile(io::Error),
-    FailedToWriteJsonAbiFile(serde_json::Error),
+	FailedToCreateDirectory(io::Error),
+	FailedToCreateJsonFile(io::Error),
+	FailedToWriteJsonAbiFile(serde_json::Error),
 }
 
 impl JsonError {
-    /// Returns a JSON error indicating that the creation of the
-    /// directory that will contain the JSON file failed.
-    pub fn failed_to_create_dir(err: io::Error) -> Self {
-        JsonError::FailedToCreateDirectory(err)
-    }
+	/// Returns a JSON error indicating that the creation of the
+	/// directory that will contain the JSON file failed.
+	pub fn failed_to_create_dir(err: io::Error) -> Self {
+		JsonError::FailedToCreateDirectory(err)
+	}
 
-    /// Returns a JSON error indicating that the creation of the JSON
-    /// abi file failed.
-    pub fn failed_to_create_json_file(err: io::Error) -> Self {
-        JsonError::FailedToCreateJsonFile(err)
-    }
+	/// Returns a JSON error indicating that the creation of the JSON
+	/// abi file failed.
+	pub fn failed_to_create_json_file(err: io::Error) -> Self {
+		JsonError::FailedToCreateJsonFile(err)
+	}
 
-    /// Returns a JSON error indicating that the writing of the JSON
-    /// abi file failed.
-    pub fn failed_to_write_json_abi_file(err: serde_json::Error) -> Self {
-        JsonError::FailedToWriteJsonAbiFile(err)
-    }
+	/// Returns a JSON error indicating that the writing of the JSON
+	/// abi file failed.
+	pub fn failed_to_write_json_abi_file(err: serde_json::Error) -> Self {
+		JsonError::FailedToWriteJsonAbiFile(err)
+	}
 }
 
 impl std::fmt::Display for JsonError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
-        match self {
-            JsonError::FailedToCreateDirectory(err) => {
-                write!(f, "failed to create directory for JSON abi file: {:?}", err)
-            }
-            JsonError::FailedToCreateJsonFile(err) => {
-                write!(f, "failed to create JSON abi file: {:?}", err)
-            }
-            JsonError::FailedToWriteJsonAbiFile(err) => {
-                write!(f, "failed to write JSON abi file: {:?}", err)
-            }
-        }
-    }
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::result::Result<(), std::fmt::Error> {
+		match self {
+			JsonError::FailedToCreateDirectory(err) => {
+				write!(f, "failed to create directory for JSON abi file: {:?}", err)
+			}
+			JsonError::FailedToCreateJsonFile(err) => {
+				write!(f, "failed to create JSON abi file: {:?}", err)
+			}
+			JsonError::FailedToWriteJsonAbiFile(err) => {
+				write!(f, "failed to write JSON abi file: {:?}", err)
+			}
+		}
+	}
 }
 
 impl std::error::Error for JsonError {
-    fn description(&self) -> &str {
-        match self {
-            JsonError::FailedToCreateDirectory(_) => {
-                "failed to create directory for the JSON abi file"
-            }
-            JsonError::FailedToCreateJsonFile(_) => "failed to create JSON abi file",
-            JsonError::FailedToWriteJsonAbiFile(_) => "failed to write JSON abi file",
-        }
-    }
+	fn description(&self) -> &str {
+		match self {
+			JsonError::FailedToCreateDirectory(_) => {
+				"failed to create directory for the JSON abi file"
+			}
+			JsonError::FailedToCreateJsonFile(_) => "failed to create JSON abi file",
+			JsonError::FailedToWriteJsonAbiFile(_) => "failed to write JSON abi file",
+		}
+	}
 
-    fn cause(&self) -> Option<&std::error::Error> {
-        match self {
-            JsonError::FailedToCreateDirectory(err) => Some(err),
-            JsonError::FailedToCreateJsonFile(err) => Some(err),
-            JsonError::FailedToWriteJsonAbiFile(err) => Some(err),
-        }
-    }
+	fn cause(&self) -> Option<&std::error::Error> {
+		match self {
+			JsonError::FailedToCreateDirectory(err) => Some(err),
+			JsonError::FailedToCreateJsonFile(err) => Some(err),
+			JsonError::FailedToWriteJsonAbiFile(err) => Some(err),
+		}
+	}
 }
 
 /// Writes generated abi JSON file to destination in default target directory.
@@ -79,29 +79,27 @@ impl std::error::Error for JsonError {
 ///
 /// The generated JSON information may be used by offline tools around WebJS for example.
 pub fn write_json_abi(intf: &items::Interface) -> JsonResult<()> {
-    use std::{env, fs, path};
+	use std::{env, fs, path};
 
-    let target = {
-        let mut target = path::PathBuf::from(
-            env::var("CARGO_TARGET_DIR").unwrap_or(".".to_owned())
-        );
-        target.push("target");
-        target.push("json");
-        fs::create_dir_all(&target)
-            .map_err(|err| JsonError::failed_to_create_dir(err))?;
-        target.push(&format!("{}.json", intf.name()));
-        target
-    };
+	let target = {
+		let mut target =
+			path::PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".to_owned()));
+		target.push("target");
+		target.push("json");
+		fs::create_dir_all(&target).map_err(|err| JsonError::failed_to_create_dir(err))?;
+		target.push(&format!("{}.json", intf.name()));
+		target
+	};
 
-    let mut f =
-        fs::File::create(target).map_err(|err| JsonError::failed_to_create_json_file(err))?;
+	let mut f =
+		fs::File::create(target).map_err(|err| JsonError::failed_to_create_json_file(err))?;
 
-    let abi: Abi = intf.into();
+	let abi: Abi = intf.into();
 
-    serde_json::to_writer_pretty(&mut f, &abi)
-        .map_err(|err| JsonError::failed_to_write_json_abi_file(err))?;
+	serde_json::to_writer_pretty(&mut f, &abi)
+		.map_err(|err| JsonError::failed_to_write_json_abi_file(err))?;
 
-    Ok(())
+	Ok(())
 }
 
 #[derive(Serialize, Debug)]

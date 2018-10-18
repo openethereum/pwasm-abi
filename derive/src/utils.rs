@@ -13,7 +13,9 @@ impl<'a> Iterator for SignatureIterator<'a> {
 
 	fn next(&mut self) -> Option<Self::Item> {
 		while self.position < self.method_sig.decl.inputs.len() {
-			if let syn::FnArg::Captured(ref arg_captured) = self.method_sig.decl.inputs[self.position] {
+			if let syn::FnArg::Captured(ref arg_captured) =
+				self.method_sig.decl.inputs[self.position]
+			{
 				self.position += 1;
 				return Some((arg_captured.pat.clone(), arg_captured.ty.clone()));
 			} else {
@@ -35,18 +37,14 @@ pub fn produce_signature<T: quote::ToTokens>(
 	ident: &syn::Ident,
 	method_sig: &syn::MethodSig,
 	t: T,
-)
-	-> proc_macro2::TokenStream
-{
-	let args = method_sig.decl.inputs.iter().filter_map(|arg| {
-		match arg {
-			syn::FnArg::Captured(arg_captured) => {
-				let pat = &arg_captured.pat;
-				let ty = &arg_captured.ty;
-				Some(quote!{#pat: #ty})
-			}
-			_ => None,
+) -> proc_macro2::TokenStream {
+	let args = method_sig.decl.inputs.iter().filter_map(|arg| match arg {
+		syn::FnArg::Captured(arg_captured) => {
+			let pat = &arg_captured.pat;
+			let ty = &arg_captured.ty;
+			Some(quote!{#pat: #ty})
 		}
+		_ => None,
 	});
 	match method_sig.decl.output {
 		syn::ReturnType::Type(_, ref output) => {
