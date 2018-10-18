@@ -22,6 +22,7 @@ mod json;
 use proc_macro2::{Span};
 
 use items::Item;
+use error::{Result, Error};
 
 /// Arguments given to the `eth_abi` attribute macro.
 struct Args {
@@ -31,32 +32,34 @@ struct Args {
 	client_name: Option<String>,
 }
 
-/// Extracts `eth_abi` argument information from the given `syn::AttributeArgs`.
-impl From<syn::AttributeArgs> for Args {
-	fn from(attr_args: syn::AttributeArgs) -> Self {
-		if attr_args.len() == 0 {
-			panic!("[eth_abi] error: Expected at least 1 argument for the endpoint identifier");
-		}
-		if attr_args.len() > 2 {
-			panic!("[eth_abi] error: Expected at most 2 arguments; one for endpoint identifier and optional client identifier");
-		}
-		let endpoint_name = if let syn::NestedMeta::Meta(syn::Meta::Word(ident)) = attr_args.get(0).unwrap() {
-			ident.to_string()
-		} else {
-			panic!("[eth_abi] error: Expected an identifier (e.g. Foo) for the first parameter");
-		};
-		let client_name = attr_args.get(1).map(|meta| {
-			if let syn::NestedMeta::Meta(syn::Meta::Word(ident)) = meta {
-				ident.to_string()
-			} else {
-				panic!("[eth_abi] error: Expected an identifier (e.g. Bar) for the second parameter");
-			}
-		});
-		Args{ endpoint_name, client_name }
-	}
-}
-
 impl Args {
+	/// Extracts `eth_abi` argument information from the given `syn::AttributeArgs`.
+	pub fn from_attribute_args(attr_args: syn::AttributeArgs) -> Result<Args> {
+		if attr_args.len() == 0 || attr_args.len() > 2 {
+			return Err(Error::invalid_number_of_arguments(0));
+		}
+		let endpoint_name =
+			if let syn::NestedMeta::Meta(syn::Meta::Word(ident)) = attr_args.get(0).unwrap() {
+				Ok(ident.to_string())
+			} else {
+				Err(Error::malformatted_argument(0))
+			}?;
+		let client_name = attr_args
+			.get(1)
+			.map(|meta| {
+				if let syn::NestedMeta::Meta(syn::Meta::Word(ident)) = meta {
+					Ok(ident.to_string())
+				} else {
+					Err(Error::malformatted_argument(1))
+				}
+			})
+			.map(|meta| meta.unwrap());
+		Ok(Args {
+			endpoint_name,
+			client_name,
+		})
+	}
+
 	/// Returns the given endpoint name.
 	pub fn endpoint_name(&self) -> &str {
 		&self.endpoint_name
@@ -135,26 +138,36 @@ pub fn eth_abi(
 	args: proc_macro::TokenStream,
 	input: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-	let args = Args::from(parse_macro_input!(args as syn::AttributeArgs));
-	let intf = items::Interface::from_item(parse_macro_input!(input as syn::Item));
+	let args_toks = parse_macro_input!(args as syn::AttributeArgs);
+	let input_toks = parse_macro_input!(input as syn::Item);
+
+	let output = impl_eth_abi(args_toks, input_toks).expect("[eth_abi] error");
+
+	output.into()
+}
+
+/// Implementation of `eth_abi`.
+///
+/// This convenience function is mainly used to better handle the results of token stream.
+fn impl_eth_abi(args: syn::AttributeArgs, input: syn::Item) -> Result<proc_macro2::TokenStream> {
+	let args = Args::from_attribute_args(args)?;
+	let intf = items::Interface::from_item(input);
 
 	write_json_abi(&intf);
 
-	let output: proc_macro2::TokenStream = match args.client_name() {
+	match args.client_name() {
 		None => generate_eth_endpoint_wrapper(&intf, args.endpoint_name()),
 		Some(client_name) => {
 			generate_eth_endpoint_and_client_wrapper(&intf, args.endpoint_name(), client_name)
 		}
-	};
-
-	output.into()
+	}
 }
 
 /// Generates the eth abi code in case of a single provided endpoint.
 fn generate_eth_endpoint_wrapper(
 	intf: &items::Interface,
 	endpoint_name: &str,
-) -> proc_macro2::TokenStream {
+) -> Result<proc_macro2::TokenStream> {
 
 	// FIXME: Code duplication with `generate_eth_endpoint_and_client_wrapper`
 	//        We might want to fix this, however it is not critical.
@@ -166,7 +179,8 @@ fn generate_eth_endpoint_wrapper(
 
 	let endpoint_toks = generate_eth_endpoint(endpoint_name, intf);
 	let endpoint_ident = syn::Ident::new(endpoint_name, Span::call_site());
-	quote! {
+
+	Ok(quote! {
 		#intf
 		#[allow(non_snake_case)]
 		mod #mod_name_ident {
@@ -177,7 +191,7 @@ fn generate_eth_endpoint_wrapper(
 			#endpoint_toks
 		}
 		pub use self::#mod_name_ident::#endpoint_ident;
-	}
+	})
 }
 
 /// Generates the eth abi code in case of a provided endpoint and client.
@@ -185,7 +199,7 @@ fn generate_eth_endpoint_and_client_wrapper(
 	intf: &items::Interface,
 	endpoint_name: &str,
 	client_name: &str,
-) -> proc_macro2::TokenStream {
+) -> Result<proc_macro2::TokenStream> {
 
 	// FIXME: Code duplication with `generate_eth_endpoint_and_client_wrapper`
 	//        We might want to fix this, however it is not critical.
@@ -199,7 +213,8 @@ fn generate_eth_endpoint_and_client_wrapper(
 	let client_toks = generate_eth_client(client_name, &intf);
 	let endpoint_name_ident = syn::Ident::new(endpoint_name, Span::call_site());
 	let client_name_ident = syn::Ident::new(&client_name, Span::call_site());
-	quote! {
+
+	Ok(quote! {
 		#intf
 		#[allow(non_snake_case)]
 		mod #mod_name_ident {
@@ -212,7 +227,7 @@ fn generate_eth_endpoint_and_client_wrapper(
 		}
 		pub use self::#mod_name_ident::#endpoint_name_ident;
 		pub use self::#mod_name_ident::#client_name_ident;
-	}
+	})
 }
 
 fn generate_eth_client(client_name: &str, intf: &items::Interface) -> proc_macro2::TokenStream {
