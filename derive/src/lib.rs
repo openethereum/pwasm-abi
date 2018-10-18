@@ -116,7 +116,12 @@ pub fn eth_abi(
 	let args_toks = parse_macro_input!(args as syn::AttributeArgs);
 	let input_toks = parse_macro_input!(input as syn::Item);
 
-	let output = impl_eth_abi(args_toks, input_toks).expect("[eth_abi] error");
+	let output = match impl_eth_abi(args_toks, input_toks) {
+		Ok(output) => output,
+		Err(err) => {
+			panic!("[eth_abi] encountered error: {}", err)
+		}
+	};
 
 	output.into()
 }
