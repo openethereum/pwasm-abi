@@ -82,11 +82,13 @@ pub fn write_json_abi(intf: &items::Interface) -> JsonResult<()> {
     use std::{env, fs, path};
 
     let target = {
-        let mut target =
-            path::PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".to_owned()));
+        let mut target = path::PathBuf::from(
+            env::var("CARGO_TARGET_DIR").unwrap_or(".".to_owned())
+        );
         target.push("target");
         target.push("json");
-        fs::create_dir_all(&target).map_err(|err| JsonError::failed_to_create_dir(err))?;
+        fs::create_dir_all(&target)
+            .map_err(|err| JsonError::failed_to_create_dir(err))?;
         target.push(&format!("{}.json", intf.name()));
         target
     };
