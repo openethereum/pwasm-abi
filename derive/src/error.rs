@@ -3,12 +3,12 @@ use std;
 use json::JsonError;
 
 /// The result type for this procedural macro.
-pub(crate) type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// Represents errors that may be encountered in
 /// invokations of this procedural macro.
 #[derive(Debug)]
-pub(crate) struct Error {
+pub struct Error {
     /// The kind of this error.
     kind: ErrorKind,
 }
@@ -16,7 +16,7 @@ pub(crate) struct Error {
 /// Kinds of errors that may be encountered in invokations
 /// of this procedural macro.
 #[derive(Debug)]
-pub(crate) enum ErrorKind {
+pub enum ErrorKind {
     /// An error that occured upon a JSON operation.
     JsonError(JsonError),
     /// When there was an invalid number of arguments passed to `eth_abi`.
