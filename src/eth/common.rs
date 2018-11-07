@@ -121,11 +121,11 @@ impl AbiType for U256 {
 impl AbiType for Address {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
 		let arr = <H256>::decode(stream)?;
-		Ok(arr.into())
+		Ok(H160::from(arr).into())
 	}
 
 	fn encode(self, sink: &mut Sink) {
-		H256::from(self).encode(sink)
+		H256::from(self.into_inner()).encode(sink)
 	}
 
 	const IS_FIXED: bool = true;
@@ -138,7 +138,7 @@ impl AbiType for H256 {
 	}
 
 	fn encode(self, sink: &mut Sink) {
-		self.0.encode(sink)
+		self.as_fixed_bytes().encode(sink)
 	}
 
 	const IS_FIXED: bool = true;
