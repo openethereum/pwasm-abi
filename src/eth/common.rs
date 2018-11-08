@@ -2,7 +2,8 @@
 
 use lib::*;
 use super::{util, Stream, AbiType, Sink, Error};
-use super::types::*;
+use super::types::{H160, H256, U256};
+type Address = H160;
 
 impl AbiType for u32 {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
@@ -125,7 +126,7 @@ impl AbiType for Address {
 	}
 
 	fn encode(self, sink: &mut Sink) {
-		H256::from(self.into_inner()).encode(sink)
+		H256::from(self).encode(sink)
 	}
 
 	const IS_FIXED: bool = true;
