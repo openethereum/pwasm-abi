@@ -2,7 +2,8 @@
 use pwasm_test::{ext_get, ext_reset, Endpoint};
 use pwasm_abi::eth::EndpointInterface;
 use pwasm_abi_derive::eth_abi;
-use pwasm_abi::types::*;
+use pwasm_abi::types::{H160, U256};
+type Address = H160;
 
 #[eth_abi(TestEndpoint, Client)]
 pub trait TestContract {
