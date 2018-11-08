@@ -21,7 +21,7 @@ proc-macro2 = "0.4"
 
 tiny-keccak = { version = "1.4.2", default-features = false }
 byteorder = { version = "1.2.3", default-features = false }
-parity-hash = { version = "1.2.2", default-features = false }
+fixed-hash = { version = "0.3.0-beta", default-features = false }
 serde = "1.0.70"
 serde_json = "1.0.24"
 serde_derive = "1.0.70"
