@@ -1,9 +1,7 @@
 //! Ethereum (Solidity) derivation for rust contracts (compiled to wasm or otherwise)
 
 #![feature(use_extern_macros)]
-
 #![recursion_limit = "128"]
-
 #![deny(unused)]
 
 extern crate proc_macro;
