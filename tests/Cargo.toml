@@ -15,5 +15,5 @@ branch = "update-to-pwasm-std-0_11"
 optional = true
 
 [features]
-default = []
+default = ["test"]
 test = ["pwasm-test", "pwasm-std/std", "pwasm-ethereum/std"]
