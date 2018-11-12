@@ -172,8 +172,7 @@ fn generate_eth_endpoint_wrapper(
 		mod #mod_name_ident {
 			extern crate pwasm_ethereum;
 			extern crate pwasm_abi;
-			use pwasm_abi::types::{H160, H256, U256};
-			type Address = H160;
+			use pwasm_abi::types::{H160, H256, U256, Address};
 			use super::#name_ident_use;
 			#endpoint_toks
 		}
@@ -207,8 +206,7 @@ fn generate_eth_endpoint_and_client_wrapper(
 		mod #mod_name_ident {
 			extern crate pwasm_ethereum;
 			extern crate pwasm_abi;
-			use pwasm_abi::types::{H160, H256, U256};
-			type Address = H160;
+			use pwasm_abi::types::{H160, H256, U256, Address};
 			use super::#name_ident_use;
 			#endpoint_toks
 			#client_toks

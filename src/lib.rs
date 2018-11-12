@@ -9,7 +9,7 @@ extern crate byteorder;
 extern crate pwasm_std;
 
 #[cfg(test)]
-#[macro_use]
+#[cfg_attr(all(test, feature = "std"), macro_use)]
 extern crate hex_literal;
 
 #[cfg(not(feature="std"))]

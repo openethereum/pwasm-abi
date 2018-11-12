@@ -16,7 +16,7 @@ exclude = [ "tests/*", "derive/*" ]
 panic = "abort"
 
 [dependencies]
-pwasm-std = "0.11"
+pwasm-std = "0.13"
 
 [dependencies.byteorder]
 version = "1.2.3"
@@ -27,5 +27,5 @@ hex-literal = "0.1"
 
 [features]
 default = []
-std = ["pwasm-std/std"]
+std = ["pwasm-std/std", "byteorder/std"]
 strict = []
