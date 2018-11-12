@@ -3,8 +3,7 @@ mod contract {
 	#![allow(dead_code)]
 
 	use pwasm_abi_derive::eth_abi;
-	use pwasm_abi::types::{H160, U256};
-	type Address = H160;
+	use pwasm_abi::types::{H160, U256, Address};
 
 	use std::collections::HashMap;
 
@@ -46,8 +45,7 @@ mod contract {
 }
 
 use pwasm_abi::eth::EndpointInterface;
-use pwasm_abi::types::{H160, U256};
-type Address = H160;
+use pwasm_abi::types::{H160, U256, Address};
 
 // balanceOf(0x0)
 const SAMPLE1: &'static [u8] = &[

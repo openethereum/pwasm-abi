@@ -4,11 +4,18 @@ version = "0.0.0"
 authors = ["NikVolf <nikvolf@gmail.com>"]
 
 [dependencies]
-pwasm-std = "0.11"
-pwasm-test = { git = "https://github.com/robbepop/pwasm-test", branch = "update-to-pwasm-std-0_11", optional = true }
+pwasm-std = "0.13"
 pwasm-abi = { path = "..", default-features = false }
 pwasm-abi-derive = { path = "../derive" }
-pwasm-ethereum = { git = "https://github.com/Robbepop/pwasm-ethereum", branch = "update-to-pwasm-std-0_11" }
+
+[dependencies.pwasm-test]
+git = "https://github.com/Robbepop/pwasm-test"
+branch = "update-to-pwasm-std-0_11"
+optional = true
+
+[dependencies.pwasm-ethereum]
+git = "https://github.com/Robbepop/pwasm-ethereum"
+branch = "update-to-pwasm-std-0_11"
 
 [features]
 default = []
