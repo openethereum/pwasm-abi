@@ -67,6 +67,6 @@ impl AsLog for H256 {
 
 impl AsLog for Address {
 	fn as_log(&self) -> H256 {
-		self.into()
+		(*self).into()
 	}
 }

@@ -1,7 +1,11 @@
 use {syn, quote};
 use tiny_keccak::Keccak;
-use parity_hash::H256;
 use byteorder::{BigEndian, ByteOrder};
+
+construct_fixed_hash!{
+	/// Uninterpreted 32 byte (256 bit) large hash type.
+	pub struct H256(32);
+}
 
 pub struct SignatureIterator<'a> {
 	method_sig: &'a syn::MethodSig,

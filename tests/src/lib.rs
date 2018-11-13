@@ -1,12 +1,11 @@
-#![feature(extern_prelude)]
-#![cfg_attr(not(feature="test"), no_std)]
-#![cfg_attr(not(feature="test"), feature(alloc))]
-#![feature(use_extern_macros)]
+#![cfg_attr(not(feature = "test"), no_std)]
+#![cfg_attr(not(feature = "test"), feature(alloc))]
 #![feature(proc_macro_hygiene)]
 #![cfg(test)]
 
 extern crate pwasm_std;
 extern crate pwasm_ethereum;
+#[cfg(feature = "pwasm-test")]
 extern crate pwasm_test;
 extern crate pwasm_abi;
 extern crate pwasm_abi_derive;

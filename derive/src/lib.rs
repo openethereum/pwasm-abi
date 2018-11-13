@@ -1,5 +1,5 @@
 //! Ethereum (Solidity) derivation for rust contracts (compiled to wasm or otherwise)
-#![feature(use_extern_macros)]
+
 #![recursion_limit = "128"]
 #![deny(unused)]
 
@@ -13,9 +13,11 @@ extern crate syn;
 extern crate quote;
 
 extern crate byteorder;
-extern crate parity_hash;
 extern crate serde_json;
 extern crate tiny_keccak;
+
+#[macro_use(construct_fixed_hash)]
+extern crate fixed_hash;
 
 #[macro_use]
 extern crate serde_derive;
@@ -169,7 +171,7 @@ fn generate_eth_endpoint_wrapper(
 		mod #mod_name_ident {
 			extern crate pwasm_ethereum;
 			extern crate pwasm_abi;
-			use pwasm_abi::types::*;
+			use pwasm_abi::types::{H160, H256, U256, Address};
 			use super::#name_ident_use;
 			#endpoint_toks
 		}
@@ -203,7 +205,7 @@ fn generate_eth_endpoint_and_client_wrapper(
 		mod #mod_name_ident {
 			extern crate pwasm_ethereum;
 			extern crate pwasm_abi;
-			use pwasm_abi::types::*;
+			use pwasm_abi::types::{H160, H256, U256, Address};
 			use super::#name_ident_use;
 			#endpoint_toks
 			#client_toks
