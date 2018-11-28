@@ -83,6 +83,32 @@ impl AbiType for Vec<u8> {
 	const IS_FIXED: bool = false;
 }
 
+use pwasm_std::str::from_utf8;
+
+impl AbiType for String {
+	fn decode(stream: &mut Stream) -> Result<Self, Error> {
+		let len = u32::decode(stream)? as usize;
+
+		let result = from_utf8(&stream.payload()[stream.position()..stream.position() + len]).map_err(|_err| Error::Other)?.to_string();
+		stream.advance(len)?;
+		stream.finish_advance();
+
+		Ok(result)
+	}
+
+	fn encode(self, sink: &mut Sink) {
+		let mut val = self.into_bytes();
+		let len = val.len();
+		if len % 32 != 0 {
+			val.resize(len + (32 - len % 32), 0);
+		}
+		sink.push(len as u32);
+		sink.preamble_mut().extend_from_slice(&val[..]);
+	}
+
+	const IS_FIXED: bool = false;
+}
+
 impl AbiType for bool {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
 		let decoded = u32::decode(stream)?;
