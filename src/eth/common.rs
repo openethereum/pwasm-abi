@@ -89,7 +89,10 @@ impl AbiType for String {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
 		let len = u32::decode(stream)? as usize;
 
-		let result = from_utf8(&stream.payload()[stream.position()..stream.position() + len]).map_err(|_err| Error::Other)?.to_string();
+		let result = from_utf8(&stream.payload()[stream.position()..stream.position() + len])
+			.map_err(|_err| Error::Other)?
+			.to_string();
+
 		stream.advance(len)?;
 		stream.finish_advance();
 
