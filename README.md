@@ -9,7 +9,7 @@ Parity WASM Abi (Legacy and new)
 
 ```toml
 [dependencies]
-pwasm-abi = "0.1"
+pwasm-abi = "0.2"
 ```
 # License
 
