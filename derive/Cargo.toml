@@ -1,7 +1,7 @@
 [package]
 name = "pwasm-abi-derive"
 version = "0.2.1"
-authors = ["NikVolf <nikvolf@gmail.com>"]
+authors = ["NikVolf <nikvolf@gmail.com>", "Alexey Frolov <alexey@parity.io>"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/paritytech/pwasm-abi"
