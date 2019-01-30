@@ -172,8 +172,7 @@ fn generate_eth_endpoint_wrapper(
 			extern crate pwasm_ethereum;
 			extern crate pwasm_abi;
 			extern crate pwasm_std;
-			use pwasm_std::String;
-			use pwasm_abi::types::{H160, H256, U256, Address, Vec};
+			use pwasm_abi::types::{H160, H256, U256, Address, Vec, String};
 			use super::#name_ident_use;
 			#endpoint_toks
 		}
@@ -208,8 +207,7 @@ fn generate_eth_endpoint_and_client_wrapper(
 			extern crate pwasm_ethereum;
 			extern crate pwasm_abi;
 			extern crate pwasm_std;
-			use pwasm_std::String;
-			use pwasm_abi::types::{H160, H256, U256, Address, Vec};
+			use pwasm_abi::types::{H160, H256, U256, Address, Vec, String};
 			use super::#name_ident_use;
 			#endpoint_toks
 			#client_toks

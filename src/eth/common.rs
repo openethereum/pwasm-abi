@@ -3,6 +3,7 @@
 use lib::*;
 use super::{util, Stream, AbiType, Sink, Error};
 use super::types::{H160, H256, U256};
+use pwasm_std::str::from_utf8;
 
 impl AbiType for u32 {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {
@@ -82,8 +83,6 @@ impl AbiType for Vec<u8> {
 
 	const IS_FIXED: bool = false;
 }
-
-use pwasm_std::str::from_utf8;
 
 impl AbiType for String {
 	fn decode(stream: &mut Stream) -> Result<Self, Error> {

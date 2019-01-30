@@ -21,6 +21,7 @@ pub mod eth;
 /// Custom types which AbiType supports
 pub mod types {
 	pub use pwasm_std::Vec;
+	pub use pwasm_std::String;
 	pub use pwasm_std::types::*;
 }
 
