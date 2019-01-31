@@ -12,6 +12,7 @@ extern crate pwasm_abi_derive;
 
 mod erc20;
 mod arrays;
+mod strings;
 mod trivia;
 mod payable;
 mod multiple_return;
