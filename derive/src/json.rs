@@ -3,8 +3,7 @@
 use {items, utils};
 use serde_json;
 
-use std::{io};
-use std;
+use std::{self, io};
 
 /// The result type for JSON errors.
 pub type JsonResult<T> = std::result::Result<T, JsonError>;
@@ -109,6 +108,7 @@ pub struct FunctionEntry {
     pub arguments: Vec<Argument>,
     pub outputs: Vec<Argument>,
     pub constant: bool,
+	pub payable: bool,
 }
 
 #[derive(Serialize, Debug)]
@@ -219,6 +219,7 @@ impl<'a> From<&'a items::Signature> for FunctionEntry {
                 .map(|(idx, ty)| Argument { name: format!("returnValue{}", idx), type_: utils::canonicalize_type(ty) })
                 .collect(),
             constant: item.is_constant,
+			payable: item.is_payable,
         }
     }
 }
