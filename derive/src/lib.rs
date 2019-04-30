@@ -99,6 +99,7 @@ impl Args {
 /// # Example: Using just one argument
 ///
 /// ```
+/// # #![feature(custom_attribute)]
 /// #[eth_abi(Endpoint)]
 /// trait Contract { }
 /// ```
@@ -109,6 +110,7 @@ impl Args {
 /// # Example: Using two arguments
 ///
 /// ```
+/// # #![feature(custom_attribute)]
 /// #[eth_abi(Endpoint2, Client2)]
 /// trait Contract2 { }
 /// ```
